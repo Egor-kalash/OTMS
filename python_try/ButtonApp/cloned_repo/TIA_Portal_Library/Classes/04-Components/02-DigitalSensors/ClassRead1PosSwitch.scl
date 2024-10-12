@@ -1,0 +1,84 @@
+﻿TYPE "typeOnePosSwitch"
+VERSION : 0.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xDelayed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xNC { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xDelayTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         xOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      END_STRUCT;
+      hw_Inputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware inputs to the block
+         i_xIN { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+      hw_Outputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware outputs from the block
+         q_xSpare { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "ClassRead1PosSwitch"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_IN_OUT 
+      switch : "typeOnePosSwitch";
+   END_VAR
+
+   VAR 
+      statIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statInput { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instTimeDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TON_TIME;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // OTOMAKEIT SOLUTIONS / (c)Copyright 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            LOMS_Read1PosSwitch
+	  // Comment/Function: The block reads the input contact of PLC (ON/OFF). May be used 
+	  //                   to read buttons, switches, relay contacts, etc.
+	  // Library/Family:   LOMS (Library OtoMakeit Solutions)
+	  // Author:           Yuriy Mosiyenko, Otomakeit Solutions
+	  // Tested with:      CPU1214C DC/DC/Relay FW:V4.5
+	  // Engineering:      TIA Portal V17
+	  // Restrictions:     
+	  // Requirements:     PLC (S7-1200 / S7-1500)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge         | Changes applied
+	  // 01.00.00 | 2023.05.12 | Otomakeit Developer Name | copied from template
+	  // 01.00.02 | 2023.05.12 | Otomakeit Developer Name | started editing
+	  // 01.01.00 | 2024.04.29 | Yuriy Mosiyenko          | Replaced io with type
+	  // 01.01.01 | 2024.04.30 | Yuriy Mosiyenko          | Type corrected
+	  //===============================================================================
+	END_REGION
+	
+	REGION Logic
+	
+	  #statIn := #switch.hw_Inputs.i_xIN;
+	
+	  IF #switch.commands.xNC THEN
+	    #statInput := NOT #statIn;
+	  ELSE
+	    #statInput := #statIn;
+	  END_IF;
+	  
+	  IF #switch.commands.xDelayed THEN
+	    #instTimeDelay(IN:=#statInput,
+	                   PT:=#switch.commands.xDelayTime,
+	                   Q=>#switch.status.xOut);
+	  ELSE
+	    #switch.status.xOut := #statInput;
+	  END_IF;
+	  
+	END_REGION
+END_FUNCTION_BLOCK
+

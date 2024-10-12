@@ -1,0 +1,95 @@
+﻿FUNCTION_BLOCK "LOMS_SetRelayCoil"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_INPUT 
+      "on/off" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      set { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      delay { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time;
+   END_VAR
+
+   VAR_OUTPUT 
+      coil { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR 
+      statCoil { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statCoilIsSet { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRelayOnDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TON_TIME;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            LOMS_SetRelayCoil
+	  // Comment/Function: Simple FB to control a relay output
+	  //                   in addition to general coil enable command the coil can be also
+	  //                   latched by set command or unlatched by reset command
+	  //                   time input can set a delay for enabling the output
+	  // Library/Family:   LOMS - Types - LOMS - 08 Digital Actuators
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-18 | Yuriy Mosiyenko        | First released version
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	  - on/off input is keeping relay output true if true
+	  - set input latches the output to true
+	  - reset command resets the output to false
+	  - delay input sets the time for output enabling delay
+	*/)
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION  
+	
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  //coil will copy the status of on/off input if the Coil is Set status is false
+	  IF #"on/off" THEN
+	    #statCoil := true;
+	  ELSIF NOT #statCoilIsSet THEN
+	    #statCoil := false;
+	  END_IF;
+	
+	  //positive edge on Set input latches the output
+	  IF #set THEN
+	    #statCoil := true;
+	    #statCoilIsSet := true;
+	  END_IF;
+	  IF #reset THEN
+	    #statCoil := false;
+	    #statCoilIsSet := false;
+	  END_IF;
+	    
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	
+	  #statRelayOnDelay(IN := #statCoil,
+	                      PT := #delay,
+	                      Q => #coil);
+	  IF NOT #statCoil THEN
+	    #coil := FALSE;
+	  END_IF;
+	  ENO := TRUE;
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

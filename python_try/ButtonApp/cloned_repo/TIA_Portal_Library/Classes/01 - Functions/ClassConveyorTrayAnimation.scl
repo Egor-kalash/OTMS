@@ -1,0 +1,166 @@
+﻿FUNCTION_BLOCK "ClassConveyorTrayAnimation"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      i_xTakeNewTray { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      i_xRemoveLastTray { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      i_xInit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      i_iConveyorState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // 1 - running, the rest are stopped.
+      i_rConveyorSpeed_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      i_rConveyorMaxSpeed_mmPerSec { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // conveyor maximum speed in mm/s
+      i_rConveyorLength_mm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // this variable is used to set the length of the conveyor to calculate the speed of the animation
+      i_iMaxNumberOfTrays { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := 1;   // this is to limit the number of trays on the conveyor
+   END_VAR
+
+   VAR_OUTPUT 
+      q_TrayPositionArray { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[1..10] of Int;   // this array contains the position of each tray on the conveyor in INT percent
+   END_VAR
+
+   VAR_IN_OUT 
+      io_Spare { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR 
+      statNewTray { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statNewTrayTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // trigger that makes after a small delay to prevent flickering on the sensor
+      statNewTrayMemory { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTrayRemoved { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTrayRemovedTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTrayRemovedMemory { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statConveyorIsRunning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statOneSecondTimerInit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      stat1SecFlag { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTimeAccumReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTrayPositionChangePerSec { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statTrayCurrentMaximumPosition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // the current maximum position of the tray
+      statTrayNumberWithMaximumPosition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // the number of the tray with the maximum position
+      statMaxNumberOfTrays { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statRunTimePerSec { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time;
+      statTrayPositionArray { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[1..10] of Int;   // this array contains the position of each tray on the conveyor in INT percentTIA built-in instructions
+      instOneSecondTimer {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instNewTrayDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TON_TIME;
+      instTrayRemovedDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TON_TIME;
+      instRunningTimePerSec {InstructionName := 'TONR_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TONR_TIME;
+   END_VAR
+
+   VAR_TEMP 
+      tempSpare : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      "CONSTANT" : Bool;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // OTOMAKEIT SOLUTIONS / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            ClassConveyorTrayAnimation
+	  // Comment/Function: This function block is used to animate the conveyor tray 
+	  //                   movement
+	  // Library/Family:   LOMS (Library OtoMakeit Solutions)
+	  // Author:           Yuriy Mosiyenko, Otomakeit Solutions
+	  // Tested with:      CPU1215FC DC/DC/Relay
+	  // Engineering:      TIA Portal V17
+	  // Restrictions:     
+	  // Requirements:     PLC (S7-1200 / S7-1500)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|---------------------------
+	  // Created     | 2024-09-05 | Yuriy Mosiyenko        | Created
+	  // Last update |            | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-09-05 - Created
+	  //===============================================================================
+	END_REGION
+	
+	REGION INIT
+	  //initialize variables
+	  #statMaxNumberOfTrays := #i_iMaxNumberOfTrays; //set the maximum number of trays
+	  #statTrayPositionChangePerSec := #i_rConveyorSpeed_percent * #i_rConveyorMaxSpeed_mmPerSec / #i_rConveyorLength_mm; //find out how much the tray position should change per second in percent of the conveyor length
+	  #statConveyorIsRunning := #i_iConveyorState = 1; //conveyor is only running if its state equals 1
+	  #instOneSecondTimer(IN := NOT #stat1SecFlag,
+	                      PT := T#1S,
+	                      Q => #stat1SecFlag); //initialize the timer for 1 second
+	  #instRunningTimePerSec(IN := #statConveyorIsRunning,
+	                         R:=#statTimeAccumReset,
+	                         PT := T#1s,
+	                         ET => #statRunTimePerSec); //initialize the running time during second accumulation timer
+	  #statTimeAccumReset := FALSE;
+	  //trigger new tray and tray removed flags for one cycle
+	
+	  #instNewTrayDelay(IN := #i_xTakeNewTray,
+	                    PT := T#50ms,
+	                    Q => #statNewTrayTrigger);
+	  #instTrayRemovedDelay(IN := #i_xRemoveLastTray,
+	                        PT := T#50ms,
+	                        Q => #statTrayRemovedTrigger);
+	  #statNewTray := #statNewTrayTrigger AND NOT #statNewTrayMemory; //if the new tray is taken, then set the new tray flag to true
+	  #statNewTrayMemory := #statNewTrayTrigger;
+	  #statTrayRemoved := #statTrayRemovedTrigger AND NOT #statTrayRemovedMemory; //if the last tray is removed, then set the tray removed flag to true
+	  #statTrayRemovedMemory := #statTrayRemovedTrigger;
+	
+	  
+	  //if reset is true, then reset the tray position array
+	  IF #i_xInit THEN
+	    FOR #statCounter := 1 TO #statMaxNumberOfTrays DO
+	      #statTrayPositionArray[#statCounter] := 0;
+	    END_FOR;
+	  END_IF;
+	  
+	  
+	END_REGION INIT
+	
+	REGION LOGIC
+	  //if the new tray is taken, then add it to the array
+	  IF #statNewTray THEN
+	    FOR #statCounter := 1 TO #statMaxNumberOfTrays DO
+	      IF #statTrayPositionArray[#statCounter] = 0 THEN
+	        #statTrayPositionArray[#statCounter] := 1;
+	        EXIT;
+	      END_IF;
+	    END_FOR;
+	  END_IF;
+	  //if the last tray (the tray with the maximum position) is to be removed, then remove it from the array
+	  IF #statTrayRemoved THEN
+	    #statTrayPositionArray[#statTrayNumberWithMaximumPosition] := 0;
+	  END_IF;
+	  //find the tray in the array with the maximum position
+	  #statTrayNumberWithMaximumPosition := 1;
+	  #statTrayCurrentMaximumPosition := #statTrayPositionArray[1];
+	  FOR #statCounter := 1 TO #statMaxNumberOfTrays DO
+	    IF #statTrayPositionArray[#statCounter] > #statTrayCurrentMaximumPosition THEN
+	      #statTrayCurrentMaximumPosition := #statTrayPositionArray[#statCounter];
+	      #statTrayNumberWithMaximumPosition := #statCounter;
+	    END_IF;
+	  END_FOR;
+	
+	  
+	  //Implement the logic once per second
+	  IF #stat1SecFlag THEN
+	    #statTimeAccumReset := TRUE; //reset running time accumulation timer
+	      //move the trays
+	      FOR #statCounter := 1 TO #statMaxNumberOfTrays DO
+	        IF #statTrayPositionArray[#statCounter] > 0 THEN
+	          #statTrayPositionArray[#statCounter] := REAL_TO_INT(#statTrayPositionArray[#statCounter] + #statTrayPositionChangePerSec * (DINT_TO_REAL(TIME_TO_DINT(#statRunTimePerSec)) / 1000.0));
+	          IF #statTrayPositionArray[#statCounter] > 100 THEN
+	            #statTrayPositionArray[#statCounter] := 100;
+	          END_IF;
+	        END_IF;
+	      END_FOR;
+	  END_IF;
+	  
+	
+	END_REGION LOGIC
+	
+	REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+	  #q_TrayPositionArray := #statTrayPositionArray;
+	END_REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+END_FUNCTION_BLOCK
+

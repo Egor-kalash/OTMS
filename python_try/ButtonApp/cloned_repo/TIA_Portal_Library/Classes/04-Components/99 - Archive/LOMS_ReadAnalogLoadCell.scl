@@ -1,0 +1,254 @@
+﻿TYPE "typeAnalogSensorConfig"
+VERSION : 0.1
+   STRUCT
+      maxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := 27648;   // maximum valid value of analog input card
+      minInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := 0;   // minimum valid value of analog input card
+      maxAnalogOutputRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real := 100.0;   // maximum range of converted output value
+      minAnalogOutputRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real := 0.0;   // minimum range of converted output value
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_ReadAnalogLoadCell"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_INPUT 
+      enable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // block enable input
+      analog { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // potentiometer input
+      config { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeAnalogSensorConfig";   // configuration data
+   END_VAR
+
+   VAR_OUTPUT 
+      valid { ExternalWritable := 'False'} : Bool;   // TRUE: Valid set of output values available at the FB
+      busy { ExternalWritable := 'False'} : Bool;   // TRUE: FB is not finished and new output values can be expected
+      error { ExternalWritable := 'False'} : Bool;   // TRUE: An error occurred during the execution of the FB
+      status { ExternalWritable := 'False'} : Word := #STATUS_NO_CALL;   // 16#0000 - 16#7FFF: Status of the FB, 16#8000 - 16#FFFF: Error identification
+      out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // status output data of the joystick
+   END_VAR
+
+   VAR 
+      statEnableOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Old value of 'enable' input for edge detection
+      statValid { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Static value for output 'valid'
+      statBusy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Static value for output 'busy'
+      statError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Static value for output 'error'
+      statErrorUserCleared { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Error occurred that can only be solved by user; rising edge at enable input necessary
+      statErrorAutoCleared { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Error occurred that can be acknowledged by FB
+      statStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word := #STATUS_NO_CALL;   // Static value for output 'status'
+      statFBState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt := #FB_STATE_NO_PROCESSING;   // State in the state machine of the FB
+      statDisablingCompleted { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // TRUE: Disabling has been completed
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statAnalogOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statAnalogInNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_VAR
+
+   VAR_TEMP 
+      tempEnable : Bool;   // Temporary value for input 'enable'
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : DInt := 0;   // FB state: No processing
+      FB_STATE_ENABLING : DInt := 10;   // FB state: Enabling
+      FB_STATE_PROCESSING : DInt := 50;   // FB state: Processing
+      FB_STATE_DISABLING : DInt := 90;   // FB state: Disabling
+      STATUS_NO_CALL : Word := 16#7000;   // No job being currently processed
+      STATUS_FIRST_CALL : Word := 16#7001;   // First call after incoming new job (rising edge 'enable')
+      STATUS_SUBSEQUENT_CALL : Word := 16#7002;   // Subsequent call during active processing without further details
+      ERR_UNDEFINED_STATE : Word := 16#8600;   // Error: due to an undefined state in state machine
+      ERR_IN_BLOCK_OPERATION : Word := 16#8001;   // Error: Wrong operation of the function block
+      ERR_PARAMETRIZATION : Word := 16#8200;   // Error: during parameterization
+      ERR_WRONG_CONFIG : Word := 16#8201;   // Error: wrong configuration input parameters
+      ERR_PROCESSING_EXTERN : Word := 16#8400;   // Error: when processing from outside (e. g. wrong I/O signals, axis not referenced)
+      ERR_ANALOG_SIGNAL_OVERFLOW : Word := 16#8401;   // Error: analog signal value exceeds set limits
+      ERR_ANALOG_SIGNAL_UNDERFLOW : Word := 16#8402;   // Error: analog signal value below set limits
+      ERR_PROCESSING_INTERN : Word := 16#8600;   // Error: when processing internally (e. g. when calling a system function)
+      ERR_AREA_RESERVED : Word := 16#8800;   // Error: Reserved area
+      ERR_USER_DEFINED_CLASSES : Word := 16#9000;   // Error: User-defined error classes
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            ReadAnalogLoadCell
+	  // Comment/Function: simple load cell reading function block, with setting 
+	  //                   input and output limits and simple error handling
+	  //                   
+	  // Library/Family:   LOMS - Types - LOMS - 12 Analog Sensors - Load Cells
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-21 | Yuriy Mosiyenko        | First released version
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	  simple block to set the min/max limits for input analog value, output analog
+	  signal range, and make some simple checks for valid signal
+	*/)
+	END_REGION DESCRIPTION
+	#tempEnable := #enable;
+	REGION ENABLING/DISABLING
+	  IF (#tempEnable = TRUE) AND (#statStatus = #STATUS_NO_CALL) THEN // Enable FB
+	    // First call; initialize FB
+	    #statValid := TRUE;
+	    #statBusy := TRUE;
+	    #statError := FALSE;
+	    #statStatus := #STATUS_FIRST_CALL;
+	    #statErrorUserCleared := FALSE;
+	    #statErrorAutoCleared := TRUE;
+	    #statDisablingCompleted := FALSE;
+	    // State machine - start functionality
+	    #statFBState := #FB_STATE_ENABLING;
+	    
+	    // TODO: Initialize functionality: reset of variables, diagnostics, etc.
+	    #statAnalogIn := #analog;
+	    
+	  ELSIF (#tempEnable = FALSE) AND (#statEnableOld = TRUE) THEN // Disable FB 
+	    #statFBState := #FB_STATE_DISABLING;
+	    
+	  ELSIF (#statStatus = #STATUS_FIRST_CALL) THEN // Set status identifier of subsequent call
+	    #statStatus := #STATUS_SUBSEQUENT_CALL;
+	  END_IF;
+	  
+	  // Edge detection 'enable' input
+	  #statEnableOld := #tempEnable;
+	END_REGION ENABLING/DISABLING
+	
+	IF (#statStatus = #STATUS_NO_CALL) THEN // Nothing to do -> End here to reduce "system load"
+	  RETURN;
+	END_IF;
+	
+	REGION STATE MACHINE
+	  CASE #statFBState OF // State machine of FB
+	    #FB_STATE_NO_PROCESSING:
+	      REGION No Processing
+	        ;
+	      END_REGION No Processing
+	      
+	    #FB_STATE_ENABLING: // Enabling active
+	      REGION enabling
+	        //check for configuration errors
+	        IF #config.maxAnalogOutputRange <= #config.minAnalogOutputRange THEN
+	          #statStatus := #ERR_WRONG_CONFIG;
+	        ELSIF #config.maxInputValue <= #config.minInputValue THEN
+	          #statStatus := #ERR_WRONG_CONFIG;
+	        ELSE
+	          #statFBState := #FB_STATE_PROCESSING;
+	        END_IF;
+	        
+	      END_REGION enabling
+	      
+	    #FB_STATE_PROCESSING: // Processing active
+	      REGION Processing
+	        #statAnalogIn := #analog;
+	        #statError := FALSE;
+	        #statValid := true;
+	        #statStatus := #STATUS_SUBSEQUENT_CALL;
+	        
+	        //check input signal range
+	        IF #statAnalogIn > #config.maxInputValue THEN
+	          #statError := TRUE;
+	          #statValid := FALSE;
+	          #statStatus := #ERR_ANALOG_SIGNAL_OVERFLOW;
+	          #statAnalogOut := #config.maxAnalogOutputRange;
+	        ELSIF #statAnalogIn < #config.minInputValue THEN
+	          #statError := TRUE;
+	          #statValid := FALSE;
+	          #statStatus := #ERR_ANALOG_SIGNAL_UNDERFLOW;
+	          #statAnalogOut := #config.minAnalogOutputRange;
+	        ELSE
+	          //scale the output signal based on configuration and input
+	          #statAnalogInNorm := NORM_X(MIN := #config.minInputValue, VALUE := #statAnalogIn, MAX := #config.maxInputValue);
+	          #statAnalogOut := SCALE_X(MIN := #config.minAnalogOutputRange, VALUE := #statAnalogInNorm, MAX := #config.maxAnalogOutputRange);
+	        END_IF;
+	      END_REGION Processing
+	      
+	    #FB_STATE_DISABLING: // Disabling active
+	      REGION Disabling
+	        #statDisablingCompleted := TRUE;
+	      END_REGION Disabling
+	      
+	    ELSE // Undefined state in state machine reached
+	      REGION Undefined state
+	        #statStatus := #ERR_UNDEFINED_STATE;
+	        #statErrorUserCleared := TRUE;
+	      END_REGION Undefined state
+	  END_CASE;
+	END_REGION STATE MACHINE
+	
+	REGION OUTPUTS
+	  // Write outputs
+	  IF (#statDisablingCompleted = TRUE) THEN
+	    REGION Disabling
+	      // Reset outputs if disabling completed
+	      #statValid := FALSE;
+	      #statBusy := FALSE;
+	      #statError := FALSE;
+	      #statErrorUserCleared := FALSE;
+	      #statErrorAutoCleared := FALSE;
+	      #statStatus := #STATUS_NO_CALL;
+	      // TODO: Reset application specific outputs
+	      #statAnalogOut := 0;
+	      
+	    END_REGION Disabling
+	    
+	  ELSIF (#statErrorUserCleared = TRUE) AND (#statError = FALSE) THEN
+	    REGION Error user cleared
+	      // Error can only be cleared by user; rising edge at enable input is needed to continue 
+	      #statValid := FALSE;
+	      #statBusy := FALSE;
+	      #statError := TRUE;
+	      // execution aborted --> set state no processing
+	      #statFBState := #FB_STATE_NO_PROCESSING;
+	    END_REGION Error user cleared
+	    
+	  ELSIF (#statErrorAutoCleared = TRUE) AND (#statError = FALSE) THEN
+	    REGION Error auto cleared
+	      // Error can be reset by FB automatically  
+	      #statValid := TRUE;
+	      #statBusy := TRUE;
+	      #statError := FALSE;
+	      // TODO: Handling of autocleared error
+	      // 
+	    END_REGION Error auto cleared
+	    
+	  ELSIF (#statErrorAutoCleared = FALSE) AND (#statErrorUserCleared = FALSE) AND (#statError = TRUE) THEN
+	    REGION After user/auto cleared
+	      // If autocleared error is acknowledged
+	      #statValid := TRUE;
+	      #statBusy := TRUE;
+	      #statError := FALSE;
+	      // TODO: remove this line if more detailed status information is used instead of "#STATUS_SUBSEQUENT_CALL"
+	      #statStatus := #STATUS_SUBSEQUENT_CALL;
+	    END_REGION After user/auto cleared
+	    
+	  END_IF;
+	  
+	  REGION Write static values to outputs
+	    // Write static values to outputs
+	    #valid := #statValid;
+	    #busy := #statBusy;
+	    #error := #statError;
+	    #status := #statStatus;
+	    // if ENO mechanism is not used / not wanted replace the following line by --> ENO := TRUE;
+	    ENO := NOT #statError;
+	    // TODO: Write application specific static values to outputs
+	    #out := #statAnalogOut;
+	  END_REGION Write static values to outputs
+	END_REGION OUTPUTS
+	
+	
+END_FUNCTION_BLOCK
+

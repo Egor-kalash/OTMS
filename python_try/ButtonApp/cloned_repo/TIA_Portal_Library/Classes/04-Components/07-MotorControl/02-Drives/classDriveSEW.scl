@@ -1,0 +1,147 @@
+﻿TYPE "typeDriveControl"
+VERSION : 0.1
+   STRUCT
+      xDriveEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveRun { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveEmergencyStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      iDriveSpeedRef_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typePI4_In"
+VERSION : 0.1
+   STRUCT
+      i_wPI1_SW { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Status WordBit8 : Bool;   // Bits 8-15 Inverter status if bit 5 = 0Bit9 : Bool;   // 0x01 = STO safe Torque Off activeBit10 : Bool;   // 0x02 = No enableBit11 : Bool;   // 0x05 = Speed controlBit12  : Bool;   // 0x06 = Torque controlBit13  : Bool;   // 0x0A = Technology functionBit14 : Bool;   // 0x0C = Reference travelBit15 : Bool;Bit0_Enabled : Bool;   // 0:locked, 1: enabledBit1_Ready : Bool;   // 0: not ready, 1: readyBit2_DataEnabled : Bool;   // 1 if P1-12 = 5Bit3_Reserved : Bool;Bit4_Reserved : Bool;Bit5_Fault/Warning : Bool;Bit6_PosLimitSwActive : Bool;   // 0: locked, 1: enabledBit7_NegLimitSwActive : Bool;   // 0: locked, 1: enabled
+      i_wPI2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Actual Speed by default, configurable P5-12
+      i_wPI3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Actual Current by default, configurable P5-13
+      i_wPI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable P5-14
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeDriveStatus"
+VERSION : 0.1
+   STRUCT
+      xDriveRunning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveFaultStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      xDriveWarning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveWarningStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      iDriveActualSpeed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typePO4_Out"
+VERSION : 0.1
+   STRUCT
+      q_wPO1_CW : Word;   // Control Wordq_xReserved8 : Bit 8q_xReserved9 : Bit 9q_xReserved10 : Bit 10q_xReserved11 : Bit 11q_xReserved12 : Bit 12q_xReserved13 : Bit 13q_xReserved14 : Bit 14q_xReserved15 : Bit 15q_xOFF1 : Bit 0 - Inhibitq_xOFF2 : Bit 1 - Rapid stopq_xOFF3 : Bit 2 - Ramp stopq_xReserved3 : Bit 3q_xReserved4 : Bit 4q_xReserved5 : Bit 5q_xFaultReset : Bit 6 - Fault resetq_xReserved7 : Bit 7
+      q_wPO2_speedRef { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable, Speed Reference by default, P5-09
+      q_wPO3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable, P5-10
+      q_wPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable, P5-11
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "classDriveSEW"
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 0.2
+   VAR_INPUT 
+      driveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";   // control signals for the drive from the PLC
+      inPI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePI4_In";   // input PZD telegram from the drive
+   END_VAR
+
+   VAR_OUTPUT 
+      driveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";   // status of the drive for the PLC
+      outPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePO4_Out";   // output PZD telegram to the drive
+   END_VAR
+
+   VAR 
+      statPZD_ReadError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_WriteError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_Out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePO4_Out";
+      statPZD_In { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePI4_In";
+   END_VAR
+
+   VAR CONSTANT 
+      DRIVE_SPEED_REF_MULTIPLIER : Int := 200;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            classDriveSEW function block
+	  // Comment/Function: This function block is the SEW Profinet drive control. 
+	  // Parental class: classDrive
+	  // Library/Family:   LOMS
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-23 | Yuriy Mosiyenko        | Created
+	  // Last update |            | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //the block created from the classDrive template with added SEW drive specific
+	  //from LOMS_SEW_Profinet_Drive code. The version of the block is 0.2, because
+	  //it is actually the next version of the LOMS_SEW_Profinet_Drive block
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	  
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION
+	  //read input PZD telegram from the drive here
+	  #statPZD_In := #inPI4;
+	  ;
+	  
+	  #statPZD_Out.q_wPO1_CW.%X1 := TRUE; //OFF2
+	  #statPZD_Out.q_wPO1_CW.%X2 := TRUE; //OFF3
+	  
+	  
+	  //read status word
+	  #driveStatus.xDriveRunning := #statPZD_In.i_wPI1_SW.%X0;
+	  #driveStatus.xDriveFault := #statPZD_In.i_wPI1_SW.%X5;
+	  
+	  #driveStatus.iDriveActualSpeed := WORD_TO_INT(#statPZD_In.i_wPI2);
+	  
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  //if Drive Ready already we can run the drive
+	  //I DISABLE THIS CONDITION FOR TESTING WITH PLC-LAB. SHOULD BE SET BACK WITH REAL DRIVE
+	  //IF #statPZD_In.i_wPI1_SW.%X1 THEN
+	    //if drive run command received set the CW bit 0
+	    #statPZD_Out.q_wPO1_CW.%X0 := #driveControl.xDriveRun;
+	  //ELSE
+	    //#statPZD_Out.q_wPO1_CW.%X0 := FALSE;
+	  //END_IF;
+	  //if reset command received set CW bit 6
+	  #statPZD_Out.q_wPO1_CW.%X6 := #driveControl.xDriveFaultReset;
+	  
+	  //speed reference
+	  #statPZD_Out.q_wPO2_speedRef := INT_TO_WORD(REAL_TO_INT(#driveControl.iDriveSpeedRef_percent * #DRIVE_SPEED_REF_MULTIPLIER));
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  //write output PZD telegram to the drive here
+	  
+	  #outPO4 := #statPZD_Out;
+	  
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

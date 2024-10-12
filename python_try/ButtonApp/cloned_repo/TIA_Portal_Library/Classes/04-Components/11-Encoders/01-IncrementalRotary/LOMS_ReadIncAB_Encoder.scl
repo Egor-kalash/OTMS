@@ -1,0 +1,164 @@
+﻿TYPE "typeEncConfig"
+VERSION : 0.1
+   STRUCT
+      hardwireID { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : HW_HSC;
+      dir { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // enables the new count direction, set in newDir
+      cv { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // enables the new count value, set in newCV
+      rv { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // enables the new ref value, set in newRV
+      period { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // enables the new period of frequency measurement, set in newPeriod
+      newDir { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // count direction: 1=Up, -1=Down
+      newCV { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // new count value
+      newRV { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // new reference value (may be used to compare with current value and set alarms)
+      newPeriod { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // new period of frequency measurement
+      encoderPPR { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // pulse per revolution encoder parameter
+      drumDiameter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // drum or other encoder object diameter
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeEncStatus"
+VERSION : 0.1
+   STRUCT
+      busy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeRotaryIncEncOutput"
+VERSION : 0.1
+   STRUCT
+      outputCount { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // output counter from the encoder
+      revCount { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // count of revolutions based on the encoder PPR (pulses per revolution)
+      calcLengthMeters { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // calculated length based on the rating equipment (drum) diameter (meters)
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_ReadIncAB_Encoder"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_INPUT 
+      config { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeEncConfig";
+      counterInput { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // connect HSC input tag here (created in the CPU hardware configuration)
+   END_VAR
+
+   VAR_OUTPUT 
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeEncStatus";
+      out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeRotaryIncEncOutput";
+      error { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR 
+      instCTRL_HSC {InstructionName := 'CTRL_HSC'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : CTRL_HSC;
+      statBusy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;
+      statStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statCount { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRevCount { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statLength { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_VAR
+
+   VAR CONSTANT 
+      ERR_NO_ERROR : Word;
+      ERR_HID_INVALID : Word := 16#80A1;
+      ERR_COUNT_DIR_INVALID : Word := 16#80B1;
+      ERR_COUNT_VALUE_INVALID : Word := 16#80B2;
+      ERR_REF_VALUE_INVALID : Word := 16#80B3;
+      ERR_PERIOD_VALUE_INVALID : Word := 16#80B4;
+      ERR_MULT_ACCESS : Word := 16#80C0;
+      ERR_HSC_ISNOT_ENABLED : Word := 16#80D0;
+      PI : Real := 3.14159;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            ReadIncAB_Encoder
+	  // Comment/Function: function block to read Incremental encoder readings, AB encoder type, for S7-1200 only
+	  //                   
+	  // Library/Family:   LOMS - Types - LOMS - 11 Encoders - Incremental Rotary
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     only for S7-1200
+	  // Requirements:     HSC input should be enabled in the hardware configuration
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-21 | Yuriy Mosiyenko        | First released version
+	  // 00.00.02 | 2023-05-26 | Yuriy Mosiyenko        | Counter output conversion added to calculate the number of revolutions
+	  //                                                | and linear distance based on rotating equipment diameter
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	  Generally the main job here is done by the standard Siemens function CTRL_HSC. 
+	  We just adding the input datatype for better readability, error handling, so 
+	  these errors can read easier without necessity to go to help system to decode them
+	  and error output bit. 
+	  Rev 0.0.2 update: adding some more information to configuration and some additional code
+	  to provide additional information out of the box - revolutions counter and length calculation.
+	*/)
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION  
+	  //control the encoder counter settings and status
+	  //  - to reset the counter to the value in NEW_CV, set the CV input
+	  //  - to change the count direction to the one in NEW_DIR, set DIR input
+	
+	    #instCTRL_HSC(HSC := #config.hardwireID,
+	                  DIR := #config.dir,
+	                  CV := #config.cv,
+	                  RV := #config.rv,
+	                  PERIOD := #config.period,
+	                  NEW_DIR := #config.newDir,
+	                  NEW_CV := #config.newCV,
+	                  NEW_RV := #config.newRV,
+	                  NEW_PERIOD := #config.newPeriod,
+	                  BUSY => #statBusy,
+	                  STATUS => #statStatus);
+	    IF #statStatus = #ERR_NO_ERROR THEN
+	      #statError := false;
+	    ELSE
+	      #statError := true;
+	    END_IF;
+	
+	
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  IF NOT #statError THEN
+	    #statCount:=#counterInput;
+	  ELSE
+	    #statCount := 0;
+	  END_IF;
+	  
+	  REGION REVOLUTIONS AND LENGTH CALCULATION
+	    #statRevCount := DINT_TO_REAL(#statCount) / INT_TO_REAL(#config.encoderPPR);
+	    #statLength := #statRevCount * (#config.drumDiameter * #PI);
+	  END_REGION REVOLUTIONS AND LENGTH CALCULATION
+	  
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  #error := #statError;
+	  #status.status:= #statStatus;
+	  #status.busy := #instCTRL_HSC.BUSY;
+	  #out.outputCount := #statCount;
+	  #out.revCount := #statRevCount;
+	  #out.calcLengthMeters := #statLength;
+	  
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

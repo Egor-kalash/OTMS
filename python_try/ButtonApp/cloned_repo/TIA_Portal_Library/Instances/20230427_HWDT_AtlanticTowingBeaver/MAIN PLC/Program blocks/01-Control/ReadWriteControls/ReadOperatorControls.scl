@@ -1,0 +1,86 @@
+﻿FUNCTION_BLOCK "ReadOperatorControls"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      enable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      mpDi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeMainPanelDI";
+      whDi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeWheelHouseDI";
+      whAi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeWheelHouseAI";
+      deckDi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDeckControlDI";
+      deckAi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDeckControlAI";
+   END_VAR
+
+   VAR_OUTPUT 
+      deckCmds { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDeckStatus";
+      bridgeCmds { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeWheelHouseStatus";
+      mpCmds { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeMainPanelStatus";
+   END_VAR
+
+   VAR 
+      statMpCommands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typeMainPanelStatus";
+      statDeckCommands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typeDeckStatus";
+      statBridgeCommands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typeWheelHouseStatus";
+      instReadDeckControls { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "ReadDeckControls";
+      instReadMainPanelControls { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "ReadMainPanelControls";
+      instReadWheelHouseControls { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "ReadWheelHouseControls";
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            ReadOperatorControls
+	  // Comment/Function: 20230427-HWDT-AtlanticTowing project specific FB.
+	  //                   Reading operator control commands
+	  // Library/Family:   
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-25 | Yuriy Mosiyenko        | Started development
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION  
+	  
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  #instReadDeckControls(enable:=TRUE,
+	                        deckDi:=#deckDi,
+	                        deckAi:=#deckAi,
+	                        bridgeCmd:=#statBridgeCommands,
+	                        deckCommands=>#statDeckCommands);
+	  #instReadMainPanelControls(enable:=TRUE,
+	                             mpDi:=#mpDi,
+	                             mpCommands=>#statMpCommands);
+	  #instReadWheelHouseControls(enable:=TRUE,
+	                              whDi:=#whDi,
+	                              whAi:=#whAi,
+	                              wheelHouseCmds=>#statBridgeCommands);
+	  
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  #bridgeCmds := #statBridgeCommands;
+	  #deckCmds := #statDeckCommands;
+	  #mpCmds := #statMpCommands;
+	  
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

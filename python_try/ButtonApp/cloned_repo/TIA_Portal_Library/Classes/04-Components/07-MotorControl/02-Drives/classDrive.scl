@@ -1,0 +1,130 @@
+﻿TYPE "typeDriveControl"
+VERSION : 0.1
+   STRUCT
+      xDriveEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveRun { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveEmergencyStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      iDriveSpeedRef_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeDriveStatus"
+VERSION : 0.1
+   STRUCT
+      xDriveRunning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveFaultStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      xDriveWarning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveWarningStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      iDriveActualSpeed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "classDrive"
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      driveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";
+   END_VAR
+
+   VAR_OUTPUT 
+      driveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";
+   END_VAR
+
+   VAR 
+      statPZD_ReadError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_WriteError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_Out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePO4_Out";
+      statPZD_In { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePI4_In";
+
+   END_VAR
+
+   VAR CONSTANT
+      DRIVE_SPEED_REF_MULTIPLIER { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := 200;
+   END_VAR
+
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            classDrive function block
+	  // Comment/Function: This function block is the template for the drive control. 
+     //                   This function is missing the actual drive communication.
+     //                   To make the real instance of the drive control, the communication
+     //                   with the drive should be implemented in the OUTPUTS region and physical 
+     //                   drive in/out types should be added. 
+	  // Parental class: none     
+	  // Library/Family:   LOMS
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-14 | Yuriy Mosiyenko        | Created
+	  // Last update |            | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+     //Update comments:
+     //-------------------------------------------------------------------------------
+     //
+     //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	  REGION DESCRIPTION
+	(/*
+	
+	*/)
+	  END_REGION DESCRIPTION
+	  
+	  
+	  REGION INITIALISATION
+	    //read input PZD telegram from the drive here
+	    //#statPZD_In := #inPI4; ;
+	    
+	    #statPZD_Out.PO1_CW.q_xOFF2 := TRUE;
+	    #statPZD_Out.PO1_CW.q_xOFF3 := TRUE;
+	    
+	    
+	    //read status word
+	    #driveStatus.xDriveRunning := #statPZD_In.PI1_SW.i_xBit0_Enabled;
+	    #driveStatus.xDriveFault := #statPZD_In.PI1_SW."i_xBit5_Fault/Warning";
+	    
+	    #driveStatus.iDriveActualSpeed := #statPZD_In.i_iPI2;
+	    
+	
+	    
+	    
+	  END_REGION INITIALISATION  
+	  
+	  REGION PROGRAM LOGIC
+	    //if Drive Ready already we can run the drive
+	    IF #statPZD_In.PI1_SW.i_xBit1_Ready THEN
+	      //if drive run command received set the CW bit 3
+	      #statPZD_Out.PO1_CW.q_xOFF1 := #driveControl.xDriveRun;
+	    ELSE
+	      #statPZD_Out.PO1_CW.q_xOFF1 := FALSE;
+	    END_IF;
+	    //if reset command received set CW bit 11
+	    #statPZD_Out.PO1_CW.q_xFaultReset := #driveControl.xDriveFaultReset;
+	    
+	    //speed reference
+	    #statPZD_Out.q_iPO2_speedRef := REAL_TO_INT(#driveControl.iDriveSpeedRef_percent) * #DRIVE_SPEED_REF_MULTIPLIER;
+	  END_REGION PROGRAM LOGIC
+	  
+	  REGION OUTPUTS
+	    //write output PZD telegram to the drive here
+	    
+	    // #outPO4 := #statPZD_Out;
+	    
+	  END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

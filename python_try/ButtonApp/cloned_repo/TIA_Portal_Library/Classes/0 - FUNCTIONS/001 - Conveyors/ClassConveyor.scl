@@ -1,0 +1,251 @@
+﻿TYPE "typeConveyorInterface"
+VERSION : 0.2
+   STRUCT
+    commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+		 xSafetyIsOk { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xStart { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+		 xStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+		 xConveyorFullStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+		 xReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool; // reset faults
+		 xMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool; // maintenance mode
+		 xRunInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool; // run the conveyor in maintenance mode
+		 rConveyorSpeedInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real; // speed of the conveyor in maintenance mode
+		 rConveyorSpeed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+		 tStartOffDelay { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time; // delay before the conveyor stops after the start command removed
+		 tStopOffDelay { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time; // delay before the conveyor stops after the stop command removed 
+		                                                                                                                 // stop command is active when it is removed
+																														 // stop command had priority over the start command
+		 tFullOffDelay { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time; // delay before the conveyor stops after the full status is detected
+		 END_STRUCT;
+
+	status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+	    xFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+        wFaultCode { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // bit0: motor fault
+        iStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // 0-stopped and ready, 1-running, 2-stopped and full, 3-faulty, 4-estopped
+		END_STRUCT;
+   END_STRUCT;
+   
+END_TYPE
+
+FUNCTION_BLOCK "ClassConveyor"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.3
+   VAR_IN_OUT 
+      ConveyorInterface : "typeConveyorInterface";
+   END_VAR
+
+   VAR 
+      statEnabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instTimeDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      statState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // State Machine Step number
+      statNumberOfStates { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt := 1;   // State Machine Number of Steps
+      statReadyForState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..9] of Bool;
+      statCycleCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;
+	  //class specific variables
+	  statStart { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statFull { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statSafetyIsOk { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statRunInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statSpeedInMaintenance_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+	  statSpeed_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+	  statStartOffTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statStopOffTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statFullOffTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statVFDfault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+	  statDriveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";
+	  statDriveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";
+	  //instances
+	  instConveyorStartOffDelay {InstructionName := 'TOF_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TOF_TIME;
+	  instConveyorStopOffDelay {InstructionName := 'TOF_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TOF_TIME;
+	  instConveyorFullOffDelay {InstructionName := 'TOF_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TOF_TIME;
+	  instConveyorDrive {ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "classDrive";
+   END_VAR
+
+   VAR CONSTANT 
+      NUMBER_OF_STATES_IN_STATE_MACHINE : USInt := 6; //0-Conveyor stopped, 1-Conveyor running, 2-Conveyor full, 3-Conveyor fault, 4-Conveyor estopped, 5-maintenance
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // OTOMAKEIT SOLUTIONS / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            ClassConveyor
+	  // Comment/Function: Conveyor class for TIA Portal, parental class for all conveyor
+	  //                   types
+	  //                   This class is the template for the conveyor control.
+	  //                   This class using classDrive to communicate with the drive.
+	  //				   classDrive class is missing the actual drive communication.
+	  //                   It should be replaced with selected drive model class in the 
+	  //                   final instance.
+	  // Parental class:   none
+	  // Library/Family:   LOMS (Library OtoMakeit Solutions)
+	  // Author:           Yuriy Mosiyenko, Otomakeit Solutions
+	  // Tested with:      
+	  // Engineering:      TIA Portal V17
+	  // Restrictions:     
+	  // Requirements:     PLC (S7-1200 / S7-1500)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-22 | Yuriy Mosiyenko        | Created
+	  // Last update | 2024-08-23 | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+     //Update comments:
+     //-------------------------------------------------------------------------------
+     //2024-08-23. Added the conveyor control logic
+	 //2024-08-29. Added maintenance mode
+	 //===============================================================================
+	END_REGION
+	
+	REGION INIT
+	  #statNumberOfStates := #NUMBER_OF_STATES_IN_STATE_MACHINE;
+	  FOR #statCycleCounter:=0 TO #statNumberOfStates DO
+	    #statReadyForState[#statCycleCounter] := FALSE;
+	  END_FOR;
+	  
+	END_REGION INIT
+	
+	REGION READ INPUTS
+	  statEnabled := ConveyorInterface.commands.xEnable;
+	  statStart := ConveyorInterface.commands.xStart;
+	  statStop := ConveyorInterface.commands.xStop;
+	  statFull := ConveyorInterface.commands.xConveyorFullStatus;
+	  statReset := ConveyorInterface.commands.xReset;
+	  statMaintenance := ConveyorInterface.commands.xMaintenance;
+	  statRunInMaintenance := ConveyorInterface.commands.xRunInMaintenance;
+	  statSpeed_percent := ConveyorInterface.commands.rConveyorSpeed;
+	  statSpeedInMaintenance_percent := ConveyorInterface.commands.rConveyorSpeedInMaintenance;
+	  statSafetyIsOk := ConveyorInterface.commands.xSafetyIsOk;
+	    
+	END_REGION READ INPUTS
+	
+	REGION LOGIC
+	    
+	    REGION PRE-STATE MACHINE OPERATIONS
+	        //operations in this block will be implemented in each cycle, disregarding the state
+			IF statReset THEN
+				ConveyorInterface.status.xFault := FALSE;
+				ConveyorInterface.status.wFaultCode := 0;
+			END_IF;
+			IF NOT statEnabled THEN //if the conveyor is disabled, stop it and set the status to 0 (stopped and ready)
+				ConveyorInterface.status.iStatus := 0;
+				statState := 0;
+				statStart := FALSE;
+				statStop := FALSE;
+			END_IF;
+			//start off delay
+			instConveyorStartOffDelay (IN := statStart, PT := ConveyorInterface.commands.tStartOffDelay, Q => statStartOffTrigger);
+			//STOP off delay
+			instConveyorStopOffDelay (IN := statStop, PT := ConveyorInterface.commands.tStopOffDelay, Q => statStopOffTrigger);
+			//FULL off delay
+			instConveyorFullOffDelay (IN := statFull, PT := ConveyorInterface.commands.tFullOffDelay, Q => statFullOffTrigger);
+		        
+	    END_REGION PRE-STATE MACHINE OPERATONS
+	    
+	    REGION STATE MACHINE      
+	      REGION STATE MACHINE CONTROL
+			//set the conditions for each state
+			//state 0 - stopped and ready, state 1 - running, state 2 - stopped and full, state 3 - faulty, state 4 - estopped, state 5 - maintenance
+
+			//state 0 - if conveyor was full and the full status is removed or conveyor was running and the start or stop command is removed or fault was removed or safety was restored
+			//keep in mind that the stop command is active if false
+	        #statReadyForState[0] := (statState = 2 AND statFullOffTrigger) 
+			                         OR (statState = 1 AND (statStopOffTrigger or statStartOffTrigger)) 
+									 OR (statState = 4 AND statSafetyIsOk) or (statState = 3 AND not statVFDfault)
+									 OR (statState = 5 AND NOT statMaintenance);
+
+			//state 1 - if the conveyor is not full and the safety is ok and the start command is active
+	        #statReadyForState[1] := (statState = 0 AND statStart and statStop and not statFull and statSafetyIsOk);
+
+			//state 2 - if the conveyor is full
+	        #statReadyForState[2] := (statState = 1 AND statFull and statSafetyIsOk);
+
+			//state 3 - if the VFD fault is detected
+	        #statReadyForState[3] := (statState = 1 AND statVFDfault);
+
+			//state 4 - if the safety is not ok
+	        #statReadyForState[4] := (statState = 1 AND not statSafetyIsOk);
+
+			//state 5 - maintenance
+	        #statReadyForState[5] := (statState = 0 AND statMaintenance);
+	      
+	        //change state if condition is TRUE
+	        FOR #statCycleCounter := 0 TO #statNumberOfStates-1 DO
+	          IF #statReadyForState[#statCycleCounter] THEN
+	            #statState := #statCycleCounter;
+	          END_IF;
+	        END_FOR;
+	      
+	        //do not go over the set number of steps 
+	        IF #statState >= #statNumberOfStates THEN
+	          #statState := 0;
+	        END_IF;
+	      
+	      END_REGION STATE MACHINE CONTROL
+	      
+	      REGION STATE MACHINE STEPS
+	        CASE #statState OF
+	          0://STATE 0
+	            statDriveControl.xDriveEnable:=statEnabled;
+				statDriveControl.xDriveRun:=FALSE;
+				statDriveControl.xDriveEmergencyStop:=statSafetyIsOk;
+				statDriveControl.iDriveSpeedRef_percent:=0.0;
+	          1://STATE 1
+	            statDriveControl.xDriveEnable:=statEnabled;
+				statDriveControl.xDriveRun:=TRUE;
+				statDriveControl.xDriveEmergencyStop:=statSafetyIsOk;
+				statDriveControl.iDriveSpeedRef_percent:=statSpeed_percent;
+	          2://STATE 2
+	            statDriveControl.xDriveEnable:=statEnabled;
+				statDriveControl.xDriveRun:=FALSE;
+				statDriveControl.xDriveEmergencyStop:=statSafetyIsOk;
+				statDriveControl.iDriveSpeedRef_percent:=0.0;
+	          3://STATE 3
+	            statDriveControl.xDriveEnable:=false;
+				statDriveControl.xDriveRun:=FALSE;
+				statDriveControl.xDriveEmergencyStop:=statSafetyIsOk;
+				statDriveControl.iDriveSpeedRef_percent:=0.0;
+	          4://STATE 4
+	            statDriveControl.xDriveEnable:=statEnabled;
+				statDriveControl.xDriveRun:=FALSE;
+				statDriveControl.xDriveEmergencyStop:=false;
+				statDriveControl.iDriveSpeedRef_percent:=0.0;
+	          5://STATE 5
+	            statDriveControl.xDriveEnable:=statEnabled;
+				statDriveControl.xDriveRun:=statRunInMaintenance;
+				statDriveControl.xDriveEmergencyStop:=statSafetyIsOk;
+				statDriveControl.iDriveSpeedRef_percent:=statSpeedInMaintenance_percent;
+	          ELSE
+	            statDriveControl.xDriveEnable:=false;
+				statDriveControl.xDriveRun:=FALSE;
+				statDriveControl.xDriveEmergencyStop:=statSafetyIsOk;
+				statDriveControl.iDriveSpeedRef_percent:=0.0;
+	        END_CASE;
+	      END_REGION STATE MACHINE STEPS
+	      
+	    END_REGION STATE MACHINE
+	    
+	    REGION POST-STATE MACHINE OPERATIONS
+	        //operations in this block will be implemented in each cycle, disregarding the state  
+	        
+	    END_REGION POST-STATE MACHINE OPERATONS
+	    
+	END_REGION LOGIC
+	
+	REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+		//drive control
+	    instConveyorDrive(driveControl := statDriveControl, driveStatus => statDriveStatus);
+		ConveyorInterface.status.xFault := statDriveStatus.xDriveFault;
+		ConveyorInterface.status.wFaultCode := statDriveStatus.wDriveFaultStatus;
+		ConveyorInterface.status.iStatus := statState;
+
+	END_REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+END_FUNCTION_BLOCK
+

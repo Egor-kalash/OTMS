@@ -1,0 +1,324 @@
+﻿FUNCTION_BLOCK "ClassBrushingConveyorSEW"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.3
+   VAR_IN_OUT 
+      ConveyorInterface : "typeBrushingConveyorInterface";
+   END_VAR
+
+   VAR 
+      statEnabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instTimeDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      statState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // State Machine Step number
+      statNumberOfStates { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt := 1;   // State Machine Number of Steps
+      statReadyForState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..9] of Bool;
+      statCycleCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // class specific variables
+      statStart { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statFull { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statReadyToFlip { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSafetyIsOk { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRunConvInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRunBrushInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBrushExtendInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTrayStopperExtendInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSpeed_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statSpeedInMaintenance_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statBrushSpeed_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statStartOffTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStopOnTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statFullOnTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statVFDfault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBrushingIsDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBrushingIsDoneLock { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTrayStopperExtend { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBrushing { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statDriveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";
+      statDriveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";
+      statBrushDriveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";
+      statBrushDriveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";   // instances
+      instConveyorStartOffDelay {InstructionName := 'TOF_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TOF_TIME;
+      instConveyorStopOnDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instConveyorFullOnDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instBrushingDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instConveyorDrive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "classDriveSEW";
+      instBrushDrive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "classDriveSEW";
+   END_VAR
+
+   VAR CONSTANT 
+      NUMBER_OF_STATES_IN_STATE_MACHINE : USInt := 7;   // 0-Conveyor stopped, 1-Conveyor running, 2-Conveyor full, 3-Conveyor fault, 4-Conveyor estopped, 5-conveyor stopped for brushing, 6-maintenance mode
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // OTOMAKEIT SOLUTIONS / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            ClassBrushConveyorSEW
+	  // Comment/Function: Conveyor class for TIA Portal, using SEW VFD drive.
+	  //                   This conveyor is equipped with a Brusher station to clean the trays. 
+	  // Parental class:   classConveyorSEW
+	  // Library/Family:   LOMS (Library OtoMakeit Solutions)
+	  // Author:           Yuriy Mosiyenko, Otomakeit Solutions
+	  // Tested with:      
+	  // Engineering:      TIA Portal V17
+	  // Restrictions:     
+	  // Requirements:     PLC (S7-1200 / S7-1500)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-23 | Yuriy Mosiyenko        | Created
+	  // Last update | 2024-08-29 | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-08-23. Created from classConveyorTipperSEW. Added brush specific functions
+	  //2024-08-29. Added maintenance mode
+	  //===============================================================================
+	END_REGION
+	
+	REGION INIT
+	  #statNumberOfStates := #NUMBER_OF_STATES_IN_STATE_MACHINE;
+	  FOR #statCycleCounter := 0 TO #statNumberOfStates DO
+	    #statReadyForState[#statCycleCounter] := FALSE;
+	  END_FOR;
+	  
+	END_REGION INIT
+	
+	REGION READ INPUTS
+	  #statEnabled := #ConveyorInterface.commands.xEnable;
+	  #statStart := #ConveyorInterface.commands.xStart;
+	  #statStop := #ConveyorInterface.commands.xStop;
+	  #statFull := #ConveyorInterface.commands.xConveyorFullStatus;
+	  #statReset := #ConveyorInterface.commands.xReset;
+	  #statMaintenance := #ConveyorInterface.commands.xMaintenance;
+	  #statRunConvInMaintenance := #ConveyorInterface.commands.xRunConvInMaintenance;
+	  #statRunBrushInMaintenance := #ConveyorInterface.commands.xRunBrushInMaintenance;
+	  #statBrushExtendInMaintenance := #ConveyorInterface.commands.xBrushExtendInMaintenance;
+	  #statTrayStopperExtendInMaintenance := #ConveyorInterface.commands.xTrayStopperExtendInMaintenance;
+	  #statSpeed_percent := #ConveyorInterface.commands.rConveyorSpeed_percent;
+	  #statSpeedInMaintenance_percent := #ConveyorInterface.commands.rConveyorSpeedInMaintenance_percent;
+	  #statBrushSpeed_percent := #ConveyorInterface.commands.rBrushSpeed_percent;
+	  #statSafetyIsOk := #ConveyorInterface.commands.xSafetyIsOk;
+	  
+	END_REGION READ INPUTS
+	
+	REGION LOGIC
+	  
+	  REGION PRE-STATE MACHINE OPERATIONS
+	    //operations in this block will be implemented in each cycle, disregarding the state
+	    //
+	    //If reset received, reset faults, and set state machine to initial state
+	    IF #statReset THEN
+	      #ConveyorInterface.status.xFault := FALSE;
+	      #ConveyorInterface.status.wFaultCode := 0;
+	      #statState := 0;
+	    END_IF;
+	    IF NOT #statEnabled THEN //if the conveyor is disabled, stop it and set the status to 0 (stopped and ready)
+	      #ConveyorInterface.status.iStatus := 0;
+	      #statState := 0;
+	      #statStart := FALSE;
+	      #statStop := FALSE;
+	      #statReadyToFlip := FALSE;
+	    END_IF;
+	    //start off delay
+	    #instConveyorStartOffDelay(IN := #statStart,
+	                               PT := #ConveyorInterface.commands.tStartOffDelay,
+	                               Q => #statStartOffTrigger);
+	    //STOP off delay
+	    #instConveyorStopOnDelay(IN := #statStop,
+	                              PT := #ConveyorInterface.commands.tStopOnDelay,
+	                              Q => #statStopOnTrigger);
+	    //FULL off delay
+	    #instConveyorFullOnDelay(IN := #statFull,
+	                              PT := #ConveyorInterface.commands.tFullOnDelay,
+	                              Q => #statFullOnTrigger);
+	    //brushing time delay
+	    #instBrushingDelay(IN := #statState = 5,
+	                       PT := #ConveyorInterface.commands.tBrushingTimeDelay,
+	                       Q => #statBrushingIsDone);
+	    //lock brushingIsDone flag until stopped stage
+	    IF #statBrushingIsDone THEN
+	      #statBrushingIsDoneLock := TRUE;
+	    END_IF;
+	    //move tray stopper down when a tray on the load side sensor
+	    IF #statStart THEN
+	      #statTrayStopperExtend := TRUE;
+	    END_IF;
+	    //lift the tray stopper if brushing is done
+	    IF #statBrushingIsDone THEN
+	      #statTrayStopperExtend := FALSE;
+	    END_IF;
+	    
+	  END_REGION PRE-STATE MACHINE OPERATONS
+	  
+	  REGION STATE MACHINE      
+	    REGION STATE MACHINE CONTROL
+	      //set the conditions for each state
+	      //state 0 - stopped and ready, state 1 - running, state 2 - stopped and full, state 3 - faulty, state 4 - estopped, state 5 - stopped for brushing, state 6 - maintenance mode
+	      
+	      //state 0 - if conveyor was full and the full status is removed or conveyor was running and the stop command is removed or fault was removed or safety was restored
+	      //keep in mind that the stop command is active if false
+	      #statReadyForState[0] := (#statState = 2 AND NOT #statFull)
+	      OR (#statState = 4 AND #statSafetyIsOk)
+	      OR (#statState = 3 AND NOT #statVFDfault)
+	      OR (#statState = 1 AND #statBrushingIsDoneLock AND #statStop);
+	      
+	      //state 1 - if the conveyor is not full and the safety is ok and the start command is active
+	      #statReadyForState[1] := (#statState = 0 AND #statStart AND NOT #statStopOnTrigger AND NOT #statFull AND #statSafetyIsOk)
+	      OR (#statState = 5 AND #statBrushingIsDone);
+	      
+	      //state 2 - if the conveyor is full
+	      #statReadyForState[2] := (#statState < 3 AND #statFullOnTrigger AND #statSafetyIsOk);
+	      
+	      //state 3 - if the VFD fault is detected
+	      #statReadyForState[3] := (#statState = 1 AND #statVFDfault);
+	      
+	      //state 4 - if the safety is not ok
+	      #statReadyForState[4] := NOT #statSafetyIsOk;
+	      
+	      //state 5 - brushing state, if the tray ran enough time to reach the brushing station
+	      //brushingIsDoneLock flag shouldn't be set to prevent it going to stage 5 from stage 1 again when 
+	      //tray has been cleaned and running out
+	      #statReadyForState[5] := (#statState = 1 AND NOT #statStartOffTrigger AND NOT #statBrushingIsDoneLock);
+	      
+	      //state 6 - maintenance mode
+	      #statReadyForState[6] := (#statState = 0 AND #statMaintenance);
+	      
+	      //change state if condition is TRUE
+	      FOR #statCycleCounter := 0 TO #statNumberOfStates - 1 DO
+	        IF #statReadyForState[#statCycleCounter] THEN
+	          #statState := #statCycleCounter;
+	        END_IF;
+	      END_FOR;
+	      
+	      //do not go over the set number of steps 
+	      IF #statState >= #statNumberOfStates THEN
+	        #statState := 0;
+	      END_IF;
+	      
+	    END_REGION STATE MACHINE CONTROL
+	    
+	    REGION STATE MACHINE STEPS
+	      CASE #statState OF
+	        0://STATE 0
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statBrushingIsDone := false;
+	          #statBrushDriveControl.xDriveEnable := #statEnabled;
+	          #statBrushDriveControl.xDriveRun := FALSE;
+	          #statBrushDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statBrushDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statBrushing := false;
+	          #statTrayStopperExtend := FALSE;
+	          #statBrushingIsDoneLock := FALSE;
+	          
+	        1://STATE 1
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := TRUE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := #statSpeed_percent;
+	          #statBrushing := FALSE;
+	          #statBrushDriveControl.xDriveEnable := #statEnabled;
+	          #statBrushDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statBrushDriveControl.xDriveRun := FALSE;
+	          
+	        2://STATE 2
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statTrayStopperExtend := FALSE;
+	        3://STATE 3
+	          #statDriveControl.xDriveEnable := false;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statBrushing := FALSE;
+	          #statTrayStopperExtend := FALSE;
+	          #statBrushDriveControl.xDriveRun := FALSE;
+	        4://STATE 4
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := false;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statBrushing := FALSE;
+	          #statTrayStopperExtend := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := FALSE;
+	        5://STATE 5
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statBrushDriveControl.xDriveEnable := #statEnabled;
+	          #statBrushDriveControl.xDriveRun := TRUE;
+	          #statBrushDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statBrushDriveControl.iDriveSpeedRef_percent := #ConveyorInterface.commands.rBrushSpeed_percent;
+	          #statBrushing := TRUE;
+	        6://STATE 6
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := #statRunConvInMaintenance;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := #statSpeedInMaintenance_percent;
+	          #statBrushDriveControl.xDriveEnable := #statEnabled;
+	          #statBrushDriveControl.xDriveRun := #statRunBrushInMaintenance;
+	          #statBrushDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statBrushDriveControl.iDriveSpeedRef_percent := #statBrushSpeed_percent;
+	          #statBrushing := #statBrushExtendInMaintenance;
+	          #statTrayStopperExtend := #statTrayStopperExtendInMaintenance;
+	        ELSE
+	          #statDriveControl.xDriveEnable := false;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statBrushing := false;
+	          #statBrushDriveControl.xDriveEnable := false;
+	          #statBrushDriveControl.xDriveRun := FALSE;
+	          #statBrushDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statBrushDriveControl.iDriveSpeedRef_percent := 0.0;
+	          
+	      END_CASE;
+	    END_REGION STATE MACHINE STEPS
+	    
+	  END_REGION STATE MACHINE
+	  
+	  REGION POST-STATE MACHINE OPERATIONS
+	    //operations in this block will be implemented in each cycle, disregarding the state  
+	    
+	  END_REGION POST-STATE MACHINE OPERATONS
+	  
+	END_REGION LOGIC
+	
+	REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+	  //drive control
+	  #instConveyorDrive(driveControl := #statDriveControl,
+	                     inPI4 := #ConveyorInterface.inputs.i_ConveyorSEWdrivePI4,
+	                     driveStatus => #statDriveStatus,
+	                     outPO4 => #ConveyorInterface.outputs.q_ConveyorSEWdrivePO4);
+	  
+	  #ConveyorInterface.status.xFault := #statDriveStatus.xDriveFault;
+	  #ConveyorInterface.status.wFaultCode.%X0 := #statDriveStatus.xDriveFault;
+	  #ConveyorInterface.status.iStatus := #statState;
+	  
+	  //brush drive control
+	  #instBrushDrive(driveControl:=#statBrushDriveControl,
+	                  inPI4:=#ConveyorInterface.inputs.i_BrushDrivePI4,
+	                  driveStatus=>#statBrushDriveStatus,
+	                  outPO4=>#ConveyorInterface.outputs.q_BrushDrivePO4);
+	  
+	  #ConveyorInterface.status.xFault := #ConveyorInterface.status.xFault OR #statBrushDriveStatus.xDriveFault;
+	  #ConveyorInterface.status.wFaultCode.%X1 := #statBrushDriveStatus.xDriveFault;
+	  
+	  //brush control
+	  #ConveyorInterface.outputs.q_xBrushExtend := #statBrushing;
+	  //stopper control
+	  #ConveyorInterface.outputs.q_xTrayStopperExtend := #statTrayStopperExtend;
+	  
+	END_REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+END_FUNCTION_BLOCK
+

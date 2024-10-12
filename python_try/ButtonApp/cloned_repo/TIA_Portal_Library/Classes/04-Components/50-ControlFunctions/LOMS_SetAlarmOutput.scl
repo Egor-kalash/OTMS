@@ -1,0 +1,127 @@
+﻿FUNCTION_BLOCK "LOMS_SetAlarmOutput"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_INPUT 
+      enable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Warning/Alarm enable input
+      setWarning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // if this parameter enabled the Alarm bit will not be latched, but will be copying the enable input value
+      setAlarm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // if this parameter enabled the Alarm bit will be latched. Reset command will be necessary to reset it
+      bitNo { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // alarm bit number in the Alarm Word
+      reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // True on this input reset the latched Alarm bit. Doesn't make difference for warning input
+      alarmDelay { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time;   // set the time for the alarm delay
+   END_VAR
+
+   VAR_OUTPUT 
+      alarmInd { ExternalWritable := 'False'} : Bool;   // This output is set while the controlled bit in the Alarm word is set
+   END_VAR
+
+   VAR_IN_OUT 
+      alarmWord { ExternalWritable := 'False'} : Word;   // input/output Alarm Word
+   END_VAR
+
+   VAR 
+      statAlarmWord { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statAlarmInd { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statAlarmEnabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statWarningEnabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statlatch { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instAlarmDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TON_TIME;
+      instWarningDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TON_TIME;
+   END_VAR
+
+   VAR CONSTANT 
+      TRUE_BOOL_BIT : Word := 16#01;   // Just one bit which is true, to shift in word for masking
+      FALSE_BOOL_BIT : Word := 16#FFFE;   // Just one bit which is false, to shift in word for masking
+      MAX_NO_OF_BITS : USInt := 16;   // Maximum bits in a Word = 16
+      BINARY_ONES : Word := 16#FFFF;   // Binary ones - all bits are true to concatenate shifted result
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            SetAlarmOutput
+	  // Comment/Function: Set Warning (non-latching) or Alarm (latching) bit in the input Word
+	  //                   Reset input resets the selected bit in the input Word
+	  //                   The Alarm Word is connected to InOut FB parameter
+	  // Library/Family:   LOMS - Types - 3 Safety
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-18 | Yuriy Mosiyenko        | First released version
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION  
+	
+	END_REGION INITIALISATION  
+	
+	REGION SET/RESET WARNING/ALARM
+	  //copy the enable boolean input to the required place in the Alarm Word
+	  //if the setWarning enabled the enable input will be copied to the bit number bitNo
+	  //if the setAlarm enabled the bit number bitNo will be set
+	  //if the reset input enabled, the bit number bitNo will be reset if the enable bit is FALSE
+	  //the output will be enabled with time delay
+	  //if delay is not needed, set the time to zero
+	  IF #enable THEN
+	    
+	    #instAlarmDelay(IN := #setAlarm,
+	                    PT := #alarmDelay,
+	                    Q => #statAlarmEnabled);
+	    #instWarningDelay(IN:=#setWarning,
+	                      PT:=#alarmDelay,
+	                      Q=>#statWarningEnabled);
+	    
+	    IF #statAlarmEnabled THEN
+	      #statAlarmWord := #alarmWord OR SHL(IN := #TRUE_BOOL_BIT,
+	                                          N := (#bitNo MOD #MAX_NO_OF_BITS));
+	      #statAlarmInd := #enable;
+	      #statlatch := true;
+	    ELSIF #statWarningEnabled THEN
+	      #statAlarmWord := #alarmWord OR SHL(IN := #TRUE_BOOL_BIT,
+	                                          N := (#bitNo MOD #MAX_NO_OF_BITS));
+	      #statAlarmInd := TRUE;
+	      #statlatch := FALSE;
+	    ELSIF NOT #statAlarmEnabled AND NOT #statWarningEnabled AND NOT #statlatch THEN
+	      #statAlarmWord := #alarmWord AND (#BINARY_ONES XOR SHL(IN := #TRUE_BOOL_BIT,
+	                                                             N := (#bitNo MOD #MAX_NO_OF_BITS)));
+	      #statAlarmInd := false;
+	    END_IF;
+	    
+	    IF #reset AND NOT #statAlarmEnabled AND #statlatch THEN
+	      #statAlarmWord := #alarmWord AND (#BINARY_ONES XOR SHL(IN := #TRUE_BOOL_BIT,
+	                                                             N := (#bitNo MOD #MAX_NO_OF_BITS)));
+	      #statAlarmInd := false;
+	      #statlatch := FALSE;
+	    END_IF;
+	  END_IF;
+	
+	END_REGION SET/RESET WARNING/ALARM
+	
+	
+	
+	REGION OUTPUTS
+	    #alarmWord := #statAlarmWord;
+	    #alarmInd := #statAlarmInd;
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

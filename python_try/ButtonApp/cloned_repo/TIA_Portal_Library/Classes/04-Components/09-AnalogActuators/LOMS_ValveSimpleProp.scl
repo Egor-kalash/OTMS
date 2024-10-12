@@ -1,0 +1,143 @@
+﻿TYPE "typeValveSimpleProportional"
+VERSION : 0.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         rAnalogReference { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+         rMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real := 100.0;
+         rMinInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real := 0.0;
+         iMaxAnalogOutputRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := 27648;
+         iMinAnalogOutputRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := 0;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         rProportionalFeedback { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+         xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      END_STRUCT;
+      inputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware inputs to the block
+         i_iAnalogFeedback { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+      outputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware outputs from the block
+         q_xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_iOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_ValveSimpleProp"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_IN_OUT 
+      valve : "typeValveSimpleProportional";
+   END_VAR
+
+   VAR 
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statAnalogOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statAnalogInNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statFeedback { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statFeedbackNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statFeedbackOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_VAR
+
+   VAR_TEMP 
+      tempEnable : Bool;   // Temporary value for input 'enable'
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            LOMS_ValveSimpleProp
+	  // Comment/Function: Simple Proportional valve control
+	  //                   - just a general coil valve,
+	  //                   - no enable signal,
+	  //                   - single direction
+	  // Library/Family:   LOMS - Types - LOMS - 09 Analog Actuators - Valves
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-19 | Yuriy Mosiyenko        | First released version
+	  // 01.00.00 | 2024-04-30 | Yuriy Mosiyenko        | Reworking the block completely
+	  //                                                | to simplify it
+	  //                                                | and to replace discrete inputs and outputs
+	  //                                                | with type variable
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	  simple block to set the min/max limits for input analog value, output analog
+	  signal range, and make some simple checks for valid signal
+	*/)
+	END_REGION DESCRIPTION
+	#tempEnable := #valve.commands.xEnable;
+	REGION INIT
+	  IF (#tempEnable) THEN // Enable FB
+	
+	    #valve.status.xError := FALSE;
+	    #valve.status.wAlarmWord0 := 0;
+	    #statAnalogIn := #valve.commands.rAnalogReference;
+	    
+	  ELSE
+	    #valve.outputs.q_xEnable := FALSE;
+	    #valve.outputs.q_iOut := 0;
+	    #valve.status.xError := TRUE;
+	    #valve.status.wAlarmWord0.%X0 := TRUE;
+	    RETURN;
+	  END_IF;
+	
+	END_REGION INIT
+	
+	REGION INPUT REF VALIDATE
+	  //if input reference out of set range, set an error
+	  IF #valve.commands.rAnalogReference < #valve.commands.rMinInputValue OR
+	    #valve.commands.rAnalogReference > #valve.commands.rMaxInputValue THEN
+	    #valve.outputs.q_xEnable := FALSE;
+	    #valve.outputs.q_iOut := 0;
+	    #valve.status.xError := TRUE;
+	    #valve.status.wAlarmWord0.%X1 := TRUE;
+	    RETURN;
+	  END_IF;
+	END_REGION INPUT REF VALIDATE
+	
+	REGION PROCESSING
+	  #statAnalogIn := #valve.commands.rAnalogReference;
+	  //scale the output signal based on configuration and input
+	  #statAnalogInNorm := NORM_X(MIN := #valve.commands.rMinInputValue, VALUE := #statAnalogIn, MAX := #valve.commands.rMaxInputValue);
+	  #statAnalogOut := SCALE_X(MIN := #valve.commands.iMinAnalogOutputRange, VALUE := #statAnalogInNorm, MAX := #valve.commands.iMaxAnalogOutputRange);
+	END_REGION PROCESSING
+	
+	REGION FEEDBACK PROCESSING
+	  #statFeedback := #valve.inputs.i_iAnalogFeedback;
+	  //scale the output feedback based on configuration and input
+	  #statFeedbackNorm := NORM_X(MIN := #valve.commands.iMinAnalogOutputRange, VALUE := #statFeedback, MAX := #valve.commands.iMaxAnalogOutputRange);
+	  #statFeedbackOut := SCALE_X(MIN := #valve.commands.rMinInputValue, VALUE := #statFeedbackNorm, MAX := #valve.commands.rMaxInputValue);
+	END_REGION FEEDBACK PROCESSING
+	
+	REGION OUTPUTS
+	  // Write outputs
+	  
+	  REGION Write static values to outputs
+	    #valve.outputs.q_xEnable := TRUE;
+	    #valve.outputs.q_iOut := #statAnalogOut;
+	    #valve.status.rProportionalFeedback := #statFeedback;
+	  END_REGION Write static values to outputs
+	END_REGION OUTPUTS
+	
+	
+END_FUNCTION_BLOCK
+

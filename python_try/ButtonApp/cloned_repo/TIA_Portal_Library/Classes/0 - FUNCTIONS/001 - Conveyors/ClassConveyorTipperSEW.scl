@@ -1,0 +1,450 @@
+﻿TYPE "typePI4_In"
+VERSION : 0.1
+   STRUCT
+      i_wPI1_SW { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Status WordBit8 : Bool;   // Bits 8-15 Inverter status if bit 5 = 0Bit9 : Bool;   // 0x01 = STO safe Torque Off activeBit10 : Bool;   // 0x02 = No enableBit11 : Bool;   // 0x05 = Speed controlBit12  : Bool;   // 0x06 = Torque controlBit13  : Bool;   // 0x0A = Technology functionBit14 : Bool;   // 0x0C = Reference travelBit15 : Bool;Bit0_Enabled : Bool;   // 0:locked, 1: enabledBit1_Ready : Bool;   // 0: not ready, 1: readyBit2_DataEnabled : Bool;   // 1 if P1-12 = 5Bit3_Reserved : Bool;Bit4_Reserved : Bool;Bit5_Fault/Warning : Bool;Bit6_PosLimitSwActive : Bool;   // 0: locked, 1: enabledBit7_NegLimitSwActive : Bool;   // 0: locked, 1: enabled
+      i_wPI2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Actual Speed by default, configurable P5-12
+      i_wPI3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Actual Current by default, configurable P5-13
+      i_wPI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable P5-14
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typePO4_Out"
+VERSION : 0.1
+   STRUCT
+      q_wPO1_CW : Word;   // Control Wordq_xReserved8 : Bit 8q_xReserved9 : Bit 9q_xReserved10 : Bit 10q_xReserved11 : Bit 11q_xReserved12 : Bit 12q_xReserved13 : Bit 13q_xReserved14 : Bit 14q_xReserved15 : Bit 15q_xOFF1 : Bit 0 - Inhibitq_xOFF2 : Bit 1 - Rapid stopq_xOFF3 : Bit 2 - Ramp stopq_xReserved3 : Bit 3q_xReserved4 : Bit 4q_xReserved5 : Bit 5q_xFaultReset : Bit 6 - Fault resetq_xReserved7 : Bit 7
+      q_wPO2_speedRef { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable, Speed Reference by default, P5-09
+      q_wPO3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable, P5-10
+      q_wPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable, P5-11
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeDriveControl"
+VERSION : 0.1
+   STRUCT
+      xDriveEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveRun { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveEmergencyStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      iDriveSpeedRef_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeDriveStatus"
+VERSION : 0.1
+   STRUCT
+      xDriveRunning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveFaultStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      xDriveWarning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveWarningStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      iDriveActualSpeed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeConveyorTipperInterface"
+VERSION : 0.1
+   STRUCT
+      commands : Struct   // logical inputs to the block
+         xEnable : Bool;
+         xSafetyIsOk : Bool;
+         xStart : Bool;
+         xFlip : Bool;
+         xRemoveFromTipper : Bool;
+         xStop : Bool;
+         xConveyorFullStatus : Bool;
+         xReset : Bool;   // reset faults
+         xMaintenance : Bool;   // maintenance mode
+         xRunConvInMaintenance : Bool;   // run conveyor in maintenance mode
+         xExtendTipperInMaintenance : Bool;   // extend tipper in maintenance mode
+         rConveyorSpeed_percent : Real;
+         rConveyorSpeedInMaintenance_percent : Real;
+         tStartOffDelay : Time;   // delay before the conveyor stops after the start command removed
+         tStopOnDelay : Time;   // delay before the conveyor stops after the stop command received
+         tFullOnDelay : Time;   // delay before the conveyor stops after the full status is detected
+         tTipperOffDelay : Time;   // delay before the conveyor stops after the tray is removed from the tipper
+         tTipperExtendingDelay : Time;   // delay before the tipper retracts after the tray is flipped
+         rConveyorLength_cm : Real := 100.0;   // conveyor length in cm
+      END_STRUCT;
+      status : Struct   // logical outputs from the block
+         xFault : Bool;
+         wFaultCode : Word;   // bit0: motor fault
+         iStatus : USInt;   // 0-stopped and ready, 1-running, 2-stopped and full, 3-faulty, 4-estopped, 5-tipper, 6-maintenance
+      END_STRUCT;
+      inputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware inputs to the block
+         i_iConveyorSEWdrivePI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePI4_In";
+      END_STRUCT;
+      outputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware outputs from the block
+         q_iConveyorSEWdrivePO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePO4_Out";
+         q_xTipperExtend { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "classDriveSEW"
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 0.2
+   VAR_INPUT 
+      driveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";   // control signals for the drive from the PLC
+      inPI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePI4_In";   // input PZD telegram from the drive
+   END_VAR
+
+   VAR_OUTPUT 
+      driveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";   // status of the drive for the PLC
+      outPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePO4_Out";   // output PZD telegram to the drive
+   END_VAR
+
+   VAR 
+      statPZD_ReadError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_WriteError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_Out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePO4_Out";
+      statPZD_In { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePI4_In";
+   END_VAR
+
+   VAR CONSTANT 
+      DRIVE_SPEED_REF_MULTIPLIER : Int := 200;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            classDriveSEW function block
+	  // Comment/Function: This function block is the SEW Profinet drive control. 
+	  // Parental class: classDrive
+	  // Library/Family:   LOMS
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-23 | Yuriy Mosiyenko        | Created
+	  // Last update |            | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //the block created from the classDrive template with added SEW drive specific
+	  //from LOMS_SEW_Profinet_Drive code. The version of the block is 0.2, because
+	  //it is actually the next version of the LOMS_SEW_Profinet_Drive block
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	  
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION
+	  //read input PZD telegram from the drive here
+	  #statPZD_In := #inPI4;
+	  ;
+	  
+	  #statPZD_Out.q_wPO1_CW.%X1 := TRUE; //OFF2
+	  #statPZD_Out.q_wPO1_CW.%X2 := TRUE; //OFF3
+	  
+	  
+	  //read status word
+	  #driveStatus.xDriveRunning := #statPZD_In.i_wPI1_SW.%X0;
+	  #driveStatus.xDriveFault := #statPZD_In.i_wPI1_SW.%X5;
+	  
+	  #driveStatus.iDriveActualSpeed := WORD_TO_INT(#statPZD_In.i_wPI2);
+	  
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  //if Drive Ready already we can run the drive
+	  //I DISABLE THIS CONDITION FOR TESTING WITH PLC-LAB. SHOULD BE SET BACK WITH REAL DRIVE
+	  //IF #statPZD_In.i_wPI1_SW.%X1 THEN
+	    //if drive run command received set the CW bit 0
+	    #statPZD_Out.q_wPO1_CW.%X0 := #driveControl.xDriveRun;
+	  //ELSE
+	    //#statPZD_Out.q_wPO1_CW.%X0 := FALSE;
+	  //END_IF;
+	  //if reset command received set CW bit 6
+	  #statPZD_Out.q_wPO1_CW.%X6 := #driveControl.xDriveFaultReset;
+	  
+	  //speed reference
+	  #statPZD_Out.q_wPO2_speedRef := INT_TO_WORD(REAL_TO_INT(#driveControl.iDriveSpeedRef_percent * #DRIVE_SPEED_REF_MULTIPLIER));
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  //write output PZD telegram to the drive here
+	  
+	  #outPO4 := #statPZD_Out;
+	  
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK "ClassConveyorTipperSEW"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.3
+   VAR_IN_OUT 
+      ConveyorInterface : "typeConveyorTipperInterface";
+   END_VAR
+
+   VAR 
+      statEnabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instTimeDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      statState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // State Machine Step number
+      statNumberOfStates { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt := 1;   // State Machine Number of Steps
+      statReadyForState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..9] of Bool;
+      statCycleCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // class specific variables
+      statStart { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statFull { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statReadyToFlip { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSafetyIsOk { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRunConvInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statExtendTipperInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSpeed_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statSpeedInMaintenance_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statStartOffTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStopOnTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statFullOnTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTrayFlippedTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTipperExtending { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statVFDfault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statDriveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typeDriveControl";
+      statDriveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typeDriveStatus";   // instances
+      instConveyorStartOffDelay {InstructionName := 'TOF_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TOF_TIME;
+      instConveyorStopOnDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instConveyorFullOnDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instConveyorFlipOffDelay {InstructionName := 'TOF_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TOF_TIME;
+      instTipperExtendDelay {InstructionName := 'TP_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TP_TIME;
+      instConveyorDrive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "classDriveSEW";
+   END_VAR
+
+   VAR CONSTANT 
+      NUMBER_OF_STATES_IN_STATE_MACHINE : USInt := 7;   // 0-Conveyor stopped, 1-Conveyor running, 2-Conveyor full, 3-Conveyor fault, 4-Conveyor estopped, 5-conveyor stopped on tipper, 6-maintenance mode
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // OTOMAKEIT SOLUTIONS / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            ClassConveyorTipperSEW
+	  // Comment/Function: Conveyor class for TIA Portal, using SEW VFD drive.
+	  //                   This conveyor is equipped with a tipper to flip the trays. 
+	  // Parental class:   classConveyorSEW
+	  // Library/Family:   LOMS (Library OtoMakeit Solutions)
+	  // Author:           Yuriy Mosiyenko, Otomakeit Solutions
+	  // Tested with:      
+	  // Engineering:      TIA Portal V17
+	  // Restrictions:     
+	  // Requirements:     PLC (S7-1200 / S7-1500)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-23 | Yuriy Mosiyenko        | Created
+	  // Last update | 2024-08-29 | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-08-23. Created from classConveyorSEW. Added tipper specific functions
+	  //2024-08-29. Added tipper maintenance mode. 
+	  //===============================================================================
+	END_REGION
+	
+	REGION INIT
+	  #statNumberOfStates := #NUMBER_OF_STATES_IN_STATE_MACHINE;
+	  FOR #statCycleCounter := 0 TO #statNumberOfStates DO
+	    #statReadyForState[#statCycleCounter] := FALSE;
+	  END_FOR;
+	  
+	END_REGION INIT
+	
+	REGION READ INPUTS
+	  #statEnabled := #ConveyorInterface.commands.xEnable;
+	  #statStart := #ConveyorInterface.commands.xStart;
+	  #statStop := #ConveyorInterface.commands.xStop;
+	  #statReadyToFlip := #ConveyorInterface.commands.xFlip;
+	  #statFull := #ConveyorInterface.commands.xConveyorFullStatus;
+	  #statReset := #ConveyorInterface.commands.xReset;
+	  #statMaintenance := #ConveyorInterface.commands.xMaintenance;
+	  #statRunConvInMaintenance := #ConveyorInterface.commands.xRunConvInMaintenance;
+	  #statExtendTipperInMaintenance := #ConveyorInterface.commands.xExtendTipperInMaintenance;
+	  #statSpeed_percent := #ConveyorInterface.commands.rConveyorSpeed_percent;
+	  #statSpeedInMaintenance_percent := #ConveyorInterface.commands.rConveyorSpeedInMaintenance_percent;
+	  #statSafetyIsOk := #ConveyorInterface.commands.xSafetyIsOk;
+	  
+	END_REGION READ INPUTS
+	
+	REGION LOGIC
+	  
+	  REGION PRE-STATE MACHINE OPERATIONS
+	    //operations in this block will be implemented in each cycle, disregarding the state
+	    //
+	    //If reset received, reset faults, and set state machine to initial state
+	    IF #statReset THEN
+	      #ConveyorInterface.status.xFault := FALSE;
+	      #ConveyorInterface.status.wFaultCode := 0;
+	      #statState := 0;
+	    END_IF;
+	    IF NOT #statEnabled THEN //if the conveyor is disabled, stop it and set the status to 0 (stopped and ready)
+	      #ConveyorInterface.status.iStatus := 0;
+	      #statState := 0;
+	      #statStart := FALSE;
+	      #statStop := FALSE;
+	      #statReadyToFlip := FALSE;
+	    END_IF;
+	    //start off delay
+	    #instConveyorStartOffDelay(IN := #statStart,
+	                               PT := #ConveyorInterface.commands.tStartOffDelay,
+	                               Q => #statStartOffTrigger);
+	    //STOP off delay
+	    #instConveyorStopOnDelay(IN := #statStop,
+	                              PT := #ConveyorInterface.commands.tStopOnDelay,
+	                              Q => #statStopOnTrigger);
+	    //FULL off delay
+	    #instConveyorFullOnDelay(IN := #statFull,
+	                              PT := #ConveyorInterface.commands.tFullOnDelay,
+	                              Q => #statFullOnTrigger);
+	    //TRAY FLIPPED off delay. This delay is required to let the tipper cylinder to retract before 
+	    //switching the conveyor into stop and ready mode (0). 
+	    #instConveyorFlipOffDelay(IN := #statReadyToFlip,
+	                              PT := #ConveyorInterface.commands.tTipperOffDelay,
+	                              Q => #statTrayFlippedTrigger);
+	    //Tipper extending delay. This delay is to set the time for "stopped on tipper" mode. 
+	    //In this mode the cylinder is being retracted to flip the tray. So this time is time from
+	    //cylinder starts extending and cylinder starts retracting
+	    #instTipperExtendDelay(IN := #statReadyToFlip,
+	                           PT := #ConveyorInterface.commands.tTipperExtendingDelay,
+	                           Q => #statTipperExtending);
+	    
+	  END_REGION PRE-STATE MACHINE OPERATONS
+	  
+	  REGION STATE MACHINE      
+	    REGION STATE MACHINE CONTROL
+	      //set the conditions for each state
+	      //state 0 - stopped and ready, state 1 - running, state 2 - stopped and full, state 3 - faulty, state 4 - estopped, state 5 - stopped on tipper, state 6 - maintenance mode
+	      
+	      //state 0 - if conveyor was full and the full status is removed or conveyor was running and the stop command is removed or fault was removed or safety was restored
+	      //keep in mind that the stop command is active if false
+	      #statReadyForState[0] := (#statState = 2 AND NOT #statFull)
+	      OR (#statState = 1 AND (NOT #statStartOffTrigger OR #statStopOnTrigger) AND NOT #statTrayFlippedTrigger)
+	      OR (#statState = 4 AND #statSafetyIsOk)
+	      OR (#statState = 3 AND NOT #statVFDfault)
+	      OR (#statState = 6 AND NOT #statMaintenance);
+	      
+	      //state 1 - if the conveyor is not full and the safety is ok and the start command is active
+	      #statReadyForState[1] := (#statState = 0 AND #statStart AND NOT #statStop AND NOT #statFull AND #statSafetyIsOk)
+	      OR (#statState = 5 AND NOT #statTipperExtending);
+	      
+	      //state 2 - if the conveyor is full
+	      #statReadyForState[2] := (#statState < 3 AND #statFullOnTrigger AND #statSafetyIsOk);
+	      
+	      //state 3 - if the VFD fault is detected
+	      #statReadyForState[3] := (#statState = 1 AND #statVFDfault);
+	      
+	      //state 4 - if the safety is not ok
+	      #statReadyForState[4] := NOT #statSafetyIsOk;
+	      
+	      //state 5 - if the tray is on the tipper and ready to be fliped
+	      #statReadyForState[5] := (#statState = 1 AND #statTipperExtending);
+	      
+	      //state 6 - if the maintenance mode is active
+	      #statReadyForState[6] := (#statState = 0 AND #statMaintenance);
+	      
+	      //change state if condition is TRUE
+	      FOR #statCycleCounter := 0 TO #statNumberOfStates - 1 DO
+	        IF #statReadyForState[#statCycleCounter] THEN
+	          #statState := #statCycleCounter;
+	        END_IF;
+	      END_FOR;
+	      
+	      //do not go over the set number of steps 
+	      IF #statState >= #statNumberOfStates THEN
+	        #statState := 0;
+	      END_IF;
+	      
+	    END_REGION STATE MACHINE CONTROL
+	    
+	    REGION STATE MACHINE STEPS
+	      CASE #statState OF
+	        0://STATE 0 - stopped and ready
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statTipperExtending := false;
+	        1://STATE 1 - running
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := TRUE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := #statSpeed_percent;
+	        2://STATE 2 - stopped and full
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	        3://STATE 3 - faulty
+	          #statDriveControl.xDriveEnable := false;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	        4://STATE 4 - estopped
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := false;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	        5://STATE 5 - stopped on tipper
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	        6://STATE 6 - maintenance mode
+	          #statDriveControl.xDriveEnable := #statEnabled;
+	          #statDriveControl.xDriveRun := #statRunConvInMaintenance;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := #statSpeedInMaintenance_percent;
+	          #statTipperExtending := #statExtendTipperInMaintenance;
+	          
+	        ELSE
+	          #statDriveControl.xDriveEnable := false;
+	          #statDriveControl.xDriveRun := FALSE;
+	          #statDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statDriveControl.iDriveSpeedRef_percent := 0.0;
+	      END_CASE;
+	    END_REGION STATE MACHINE STEPS
+	    
+	  END_REGION STATE MACHINE
+	  
+	  REGION POST-STATE MACHINE OPERATIONS
+	    //operations in this block will be implemented in each cycle, disregarding the state  
+	    
+	  END_REGION POST-STATE MACHINE OPERATONS
+	  
+	END_REGION LOGIC
+	
+	REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+	  //drive control
+	  #instConveyorDrive(driveControl := #statDriveControl,
+	                     inPI4 := #ConveyorInterface.inputs.i_iConveyorSEWdrivePI4,
+	                     driveStatus => #statDriveStatus,
+	                     outPO4 => #ConveyorInterface.outputs.q_iConveyorSEWdrivePO4);
+	  
+	  #ConveyorInterface.status.xFault := #statDriveStatus.xDriveFault;
+	  #ConveyorInterface.status.wFaultCode := #statDriveStatus.wDriveFaultStatus;
+	  #ConveyorInterface.status.iStatus := #statState;
+	  
+	  //tipper control
+	  #ConveyorInterface.outputs.q_xTipperExtend := #statTipperExtending;
+	  
+	END_REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+END_FUNCTION_BLOCK
+

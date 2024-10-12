@@ -1,0 +1,539 @@
+﻿FUNCTION_BLOCK "SetAlarmsShutdowns"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      enable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      equipCmd { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeEquipCmd";
+      equipStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeEquipStatus";
+      deckCmds { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDeckStatus";
+      bridgeCmds { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeWheelHouseStatus";
+      mpCmds { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeMainPanelStatus";
+   END_VAR
+
+   VAR_OUTPUT 
+      alarmActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      shutdownActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      alarmsAcknowledged { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      alarmWord { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      alarmWord2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      alarmWord3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      shutdownWord { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+   END_VAR
+
+   VAR 
+      statSafetyStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // true if safety OK, false if failed
+      statResetCmd { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statAlarmsAcknowledged { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSlowGearModeActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statFastGearModeActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statAlarmWord1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statAlarmWord2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statAlarmWord3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statAlarmWord1Previous { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statAlarmWord2Previous { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statAlarmWord3Previous { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statShutdownWord { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statRunningMode { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStartingUpMode { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statPayoutByBrake { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statGeneralAlarms { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typeGeneralAlarms";
+      statVFD_Alarms { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeVFD_Alarms";
+      statWCalarms { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeWaterCoolerUnitAlarms";
+      statHydraulicAlarms { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeHydraulicUnitAlarms";
+      statAirUnitAlarms { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeAirUnitAlarms";
+      statTensionAlarms { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeTensionAlarms";
+      statJoysticksAlarms { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeControllersAlarms";
+      statGeneralShutdowns { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeGeneralShutdownAlarms";
+      statWCshutdowns { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeWaterCoolerUnitShutdownAlarms";
+      instMainCBfault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instMainContactorFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetControlsSupplyFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetBackupControlsSupplyFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetMP_EstopActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetWH_EstopFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetDeckEstopActivated { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetAC_SupplyFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetAirSupplyFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instAirPressureFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetAirUnitContactorFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetWH_JoystickFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetWH_TensionPotFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetWH_LengthPotFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetWH_PosSwFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetDeckJoystickPotFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetDeckJoystickPosSwFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetHydUnitSupplyFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLowGearNoPressWarn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetHighGearNoPressWarn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetHydrUnitContactorFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instHydrUnitMotorFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetHydrMotorTempFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLoadPin1Error { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLoadPin1Overflow { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLoadPin1Underflow { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLoadPin2Error { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLoadPin2Overflow { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLoadPin2Underflow { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLoadPin3Error { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLoadPin3Overflow { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetLoadPin3Underflow { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetTensionHighAlarm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instWaterCoolerSupplyFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instWaterCoolerContactorFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instWaterTankLevelLowAlarm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetWaterTankLevelLowLowAlarm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetNoWaterPumpsFlow { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetCoolingMotorTempFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetNoFlowOverboardFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetCoolingLiquidTempHigh { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetMainPanelEstopShutdown { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetWH_EstopShutdown { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetDeckEstopShutdown { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instSetCoolingLevelLowLowShutdown { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instBrakeResTempHiHiAlarm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instVFD_Warning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instVFD_Alarm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+      instPayoutAtMaxWarning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LOMS_SetAlarmOutput";
+   END_VAR
+
+   VAR CONSTANT 
+      ALARM_DELAY : Time := T#500ms;
+      WARNING_DELAY : Time := T#2000ms;
+      MAN_FAST_MODE : USInt := 2;
+      MAN_SLOW_MODE : USInt := 1;
+      BERTHING_MODE : USInt := 3;
+      ESCORT_MODE : USInt := 4;
+      QUICK_RELEASE_MODE : USInt := 5;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            SetAlarmsShutdowns
+	  // Comment/Function: Project 20230427-HWDT-AtlanticTowing specific FB
+	  //                   Sets Alarms and Shutdowns statuses and alarm words
+	  // Library/Family:   
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-21 | Yuriy Mosiyenko        | First released version
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION  
+	  #statAlarmWord1 := 16#0000;
+	  #statAlarmWord2 := 16#0000;
+	  #statShutdownWord := 16#0000;
+	  
+	  IF #bridgeCmds.bridgeAlarmResetCmd OR #mpCmds.mpAlarmResetCmd THEN
+	    #statResetCmd := TRUE;
+	  ELSE
+	    #statResetCmd := FALSE;
+	  END_IF;
+	  
+	  #statRunningMode := #equipCmd.equipState.run;
+	  #statStartingUpMode := #equipCmd.equipState.startup;
+	  #statSlowGearModeActive := #bridgeCmds.escortMode OR #bridgeCmds.slowSpeedMode;
+	  #statFastGearModeActive := #bridgeCmds.berthingMode OR #bridgeCmds.highSpeedMode;
+	  #statPayoutByBrake := #bridgeCmds.payoutByBrake;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  
+	  REGION SET ALARMS
+	    
+	    //Main CB fault - Alarm Word 1, bit 0
+	    #instMainCBfault(enable:=TRUE,
+	                     setAlarm:=#equipStatus.statusMainPanelEquip.mainSupplyFaultIn,
+	                     bitNo:=0,
+	                     reset:=#statResetCmd,
+	                     alarmDelay:=#ALARM_DELAY,
+	                     alarmInd=>#statGeneralAlarms.mainSupplyFault,
+	                     alarmWord:=#statAlarmWord1);
+	    //Main Contactor failure - Alarm Word 1, bit 1
+	    #instMainContactorFault(enable:=TRUE,
+	                            setAlarm:=#statRunningMode AND #statGeneralAlarms.mainSwitchFault,
+	                            bitNo:=1,
+	                            reset:=#statResetCmd,
+	                            alarmDelay:=#ALARM_DELAY,
+	                            alarmInd=>#statGeneralAlarms.mainSwitchFault,
+	                            alarmWord:=#statAlarmWord1);
+	    //Controls supply fault - Alarm Word 1, bit 2
+	    #instSetControlsSupplyFault(enable:=TRUE,
+	                                setWarning:=#equipStatus.statusMainPanelEquip.supplyControlsFaultIn,
+	                                bitNo:=2,
+	                                alarmDelay:=#ALARM_DELAY,
+	                                alarmInd=>#statGeneralAlarms.supplyControlsFault,
+	                                alarmWord:=#statAlarmWord1);
+	    
+	    //Backup controls supply fault - Alarm Word 1, bit 3
+	    #instSetBackupControlsSupplyFault(enable:=TRUE,
+	                                      setWarning:=#equipStatus.statusMainPanelEquip.supplyBackup24VdcFaultIn,
+	                                      bitNo:=3,
+	                                      alarmDelay:=#ALARM_DELAY,
+	                                      alarmInd=>#statGeneralAlarms.supplyBackup24VdcFault,
+	                                      alarmWord:=#statAlarmWord1);
+	    
+	    //Main PLC E-Stop activated - Alarm Word 1, bit 4
+	    #instSetMP_EstopActive(enable:=TRUE,
+	                           setAlarm:=#mpCmds.mpEmergencyStopCmd,
+	                           bitNo:=4,
+	                           reset:=#statResetCmd,
+	                           alarmDelay:=#ALARM_DELAY,
+	                           alarmInd=>#statGeneralAlarms.mainPLCEstopActivated,
+	                           alarmWord:=#statAlarmWord1);
+	    
+	    //Wheel House E-Stop activated - Alarm Word 1, bit 5
+	    #instSetWH_EstopFault(enable:=TRUE,
+	                          setAlarm:=#bridgeCmds.bridgeEmergencyStopCmd,
+	                          bitNo:=5,
+	                          reset:=#statResetCmd,
+	                          alarmDelay:=#ALARM_DELAY,
+	                          alarmInd=>#statGeneralAlarms.wheelhouseEstopStopActivated,
+	                          alarmWord:=#statAlarmWord1);
+	    
+	    //Deck Console E-Stop activated - Alarm Word 1, bit 6
+	    #instSetDeckEstopActivated(enable:=TRUE,
+	                               setAlarm:=#deckCmds.deckEmergencyStopCmd,
+	                               bitNo:=6,
+	                               reset:=#statResetCmd,
+	                               alarmDelay:=#ALARM_DELAY,
+	                               alarmInd=>#statGeneralAlarms.deckConsoleEstopActivated,
+	                               alarmWord:=#statAlarmWord1);
+	    
+	    //AC Heating Supply fault - Alarm Word 1, bit 7
+	    #instSetAC_SupplyFault(enable:=TRUE,
+	                           setWarning:=#equipStatus.statusMainPanelEquip.supplyACHeatingFaultIn,
+	                           bitNo:=7,
+	                           reset:=#statResetCmd,
+	                           alarmDelay:=#ALARM_DELAY,
+	                           alarmInd=>#statGeneralAlarms.supplyACHeatingFault,
+	                           alarmWord:=#statAlarmWord1);
+	    
+	    //Air Unit 24VDC Fault - Alarm Word 1, bit 8
+	    #instSetAirSupplyFault(enable:=TRUE,
+	                           setWarning:=(#statRunningMode OR #statStartingUpMode) AND #equipStatus.statusAirPressureUnit.supply24VPneumaticFault,
+	                           bitNo:=8,
+	                           alarmDelay:=#WARNING_DELAY,
+	                           alarmInd=>#statAirUnitAlarms.supply24VDCFault,
+	                           alarmWord:=#statAlarmWord1);
+	    
+	    //Air Unit Pressure Fault - Alarm Word 1, bit 9
+	    #instAirPressureFault(enable:=TRUE,
+	                          setWarning:=#statRunningMode AND NOT #equipStatus.statusAirPressureUnit.airUnitPressureOk,
+	                          bitNo:=9,
+	                          alarmDelay:=#ALARM_DELAY,
+	                          alarmInd=>#statAirUnitAlarms.airUnitPressureisNotOk,
+	                          alarmWord:=#statAlarmWord1);
+	    
+	    //Air Unit Contactor Fault - Alarm Word 1, bit 10
+	    #instSetAirUnitContactorFault(enable:=TRUE,
+	                                  setWarning:=#statRunningMode AND
+	                                  #equipStatus.statusAirPressureUnit.supply24VPneumaticFault,
+	                                  bitNo:=10,
+	                                  alarmDelay:=#ALARM_DELAY,
+	                                  alarmInd=>#statAirUnitAlarms.supply24VContactorIsNotIn,
+	                                  alarmWord:=#statAlarmWord1);
+	    
+	    //Wheel House Joystick Fault - Alarm Word 1, bit 11
+	    #instSetWH_JoystickFault(enable:=TRUE,
+	                             setWarning:=#bridgeCmds.wheelHouseJoystickError,
+	                             bitNo:=11,
+	                             alarmDelay:=#ALARM_DELAY,
+	                             alarmInd=>#statJoysticksAlarms.whJoystickError,
+	                             alarmWord:=#statAlarmWord1);
+	    
+	    //Wheel House Tension Pot Fault - Alarm Word 1, bit 12
+	    #instSetWH_TensionPotFault(enable:=FALSE);
+	    
+	    
+	    //Wheel House Length Port Fault - Alarm Word 1, bit 13
+	    #instSetWH_LengthPotFault(enable:=FALSE);
+	    
+	    //Deck Joystick Fault - Alarm Word 1, bit 14
+	    #instSetDeckJoystickPotFault(enable:=TRUE,
+	                                 setWarning:=#deckCmds.deckConsoleJoystickError,
+	                                 bitNo:=14,
+	                                 alarmDelay:=#ALARM_DELAY,
+	                                 alarmInd=>#statJoysticksAlarms.deckJoystickError,
+	                                 alarmWord:=#statAlarmWord1);
+	    
+	    
+	    //Hydraulick Unit Supply fault - Alarm Word 1, bit 15
+	    #instSetHydUnitSupplyFault(enable:=TRUE,
+	                               setWarning:=(#statRunningMode OR #statStartingUpMode) AND #equipStatus.statusHydraulicUnit.supplyHydraulicFault,
+	                               bitNo:=15,
+	                               alarmDelay:=#ALARM_DELAY,
+	                               alarmInd=>#statHydraulicAlarms.supplyHydraulicFault,
+	                               alarmWord:=#statAlarmWord1);
+	    
+	    //Low Gear No Pressure Warning - Alarm Word 2, bit 0
+	    //Low gear pressure shows that the slow hydraulic gear clutch is enabled,
+	    //which is only required in Manual Slow mode or Automatic Escort mode
+	    #instSetLowGearNoPressWarn(enable:=TRUE,
+	                               setWarning:=#equipStatus.statusMotorVFD.driveRunning AND NOT #equipStatus.statusHydraulicUnit.pressureLowGearIn
+	                               AND #statSlowGearModeActive AND NOT #statPayoutByBrake,
+	                               bitNo:=0,
+	                               alarmDelay:=#ALARM_DELAY,
+	                               alarmInd=>#statHydraulicAlarms.noPressureLowGear,
+	                               alarmWord:=#statAlarmWord2);
+	    
+	    //High Gear No Pressure Warning - Alarm Word 2, bit 1
+	    //High gear pressure shows that the fast hydraulic gear clutch is enabled, 
+	    //which is ony required in Manual Fast mode or Automatic Berthing mode
+	    #instSetHighGearNoPressWarn(enable:=TRUE,
+	                                setWarning:=#equipStatus.statusMotorVFD.driveRunning AND NOT #equipStatus.statusHydraulicUnit.pressureHighGearIn
+	                                AND #statFastGearModeActive AND NOT #statPayoutByBrake,
+	                                bitNo:=1,
+	                                alarmDelay:=#ALARM_DELAY,
+	                                alarmInd=>#statHydraulicAlarms.noPressureHighGear,
+	                                alarmWord:=#statAlarmWord2);
+	    
+	    //Hyd Unit Contactor Fault - Alarm Word 2, bit 2
+	    #instSetHydrUnitContactorFault(enable:=TRUE,
+	                                   setWarning:=(#statRunningMode OR #statStartingUpMode) AND
+	                                   NOT #equipStatus.statusHydraulicUnit.supplyHydraulicsContactorIn,
+	                                   bitNo:=2,
+	                                   alarmDelay:=#ALARM_DELAY,
+	                                   alarmInd=>#statHydraulicAlarms.supplyHydraulicsContactorIsNotIn,
+	                                   alarmWord:=#statAlarmWord2);
+	    
+	    //Hyd Unit Motor is Not running - Alarm Word 2, bit 3
+	    #instHydrUnitMotorFault(enable:=FALSE,
+	                            setWarning:=FALSE);
+	    
+	    //Hyd Motor Temp Fault - Alarm Word 2, bit 4
+	    #instSetHydrMotorTempFault(enable:=TRUE,
+	                               setWarning:=#equipStatus.statusHydraulicUnit.hydraulicMotorThermFaultIn,
+	                               bitNo:=4,
+	                               alarmDelay:=#ALARM_DELAY,
+	                               alarmInd=>#statHydraulicAlarms.hydraulicMotorThermFault,
+	                               alarmWord:=#statAlarmWord2);
+	    
+	    //load Pin 1 Error - Alarm Word 2, bit 5
+	    #instSetLoadPin1Error(enable:=FALSE);
+	    
+	    //load Pin 1 Overflow - Alarm Word 2, bit 6
+	    #instSetLoadPin1Overflow(enable:=FALSE);
+	    
+	    //load Pin 1 Underflow - Alarm Word 2, bit 7
+	    #instSetLoadPin1Underflow(enable:=FALSE);
+	    
+	    //load Pin 2 Error - Alarm Word 2, bit 8
+	    #instSetLoadPin2Error(enable := FALSE);
+	    
+	    //load Pin 2 Overflow - Alarm Word 2, bit 9
+	    #instSetLoadPin2Overflow(enable := FALSE);
+	    
+	    //load Pin 2 Underflow - Alarm Word 2, bit 10
+	    #instSetLoadPin2Underflow(enable := FALSE);
+	    
+	    //load Pin 3 Error - Alarm Word 2, bit 11
+	    #instSetLoadPin3Error(enable := FALSE);
+	    
+	    //load Pin 3 Overflow - Alarm Word 2, bit 12
+	    #instSetLoadPin3Overflow(enable := FALSE);
+	    
+	    //load Pin 3 Underflow - Alarm Word 2, bit 13
+	    #instSetLoadPin3Underflow(enable := FALSE);
+	    
+	    //tension above limit - Alarm Word 2, bit 14
+	    #instSetTensionHighAlarm(enable:=FALSE);
+	    
+	    //Water Cooler Supply Fault - Alarm Word 2, bit 15
+	    #instWaterCoolerSupplyFault(enable:=TRUE,
+	                                setWarning:=(#statRunningMode OR #statStartingUpMode) AND #equipStatus.statusWaterCoolerUnit.supplyWaterCoolFault,
+	                                bitNo:=15,
+	                                alarmDelay:=#ALARM_DELAY,
+	                                alarmInd=>#statWCalarms.supplyWaterCoolFault,
+	                                alarmWord:=#statAlarmWord2);
+	    
+	    //Water Cooler Contactor Fault - Alarm Word 3, bit 0
+	    #instWaterCoolerContactorFault(enable:=TRUE,
+	                                   setWarning:=#statRunningMode AND
+	                                   NOT #equipStatus.statusWaterCoolerUnit.supplyWaterCoolerContactor,
+	                                   alarmDelay:=#ALARM_DELAY,
+	                                   alarmInd=>#statWCalarms.supplyWaterContactorIsNotIn,
+	                                   alarmWord:=#statAlarmWord3);
+	    
+	    //Water Cooler Tank Level Low - Alarm Word 3, bit 1
+	    #instWaterTankLevelLowAlarm(enable:=TRUE,
+	                                setAlarm:=#equipStatus.statusWaterCoolerUnit.tankLevelLow,
+	                                bitNo:=1,
+	                                reset:=#statResetCmd,
+	                                alarmDelay:=#ALARM_DELAY,
+	                                alarmInd=>#statWCalarms.tankLevelLow,
+	                                alarmWord:=#statAlarmWord3);
+	    
+	    //Water Cooler Tank Level Low-Low - Alarm Word 3, bit 2
+	    #instSetWaterTankLevelLowLowAlarm(enable:=TRUE,
+	                                      setAlarm:=#equipStatus.statusWaterCoolerUnit.tankLevelLowLow,
+	                                      bitNo:=2,
+	                                      reset:=#statResetCmd,
+	                                      alarmDelay:=#ALARM_DELAY,
+	                                      alarmInd=>#statWCalarms.tankLevelLowLow,
+	                                      alarmWord:=#statAlarmWord3);
+	    
+	    //Water Cooler No Pumps flow - Alarm Word 3, bit 3
+	    #instSetNoWaterPumpsFlow(enable:=TRUE,
+	                             setWarning:=#statRunningMode AND
+	                             NOT #equipStatus.statusWaterCoolerUnit.flowWaterPumps,
+	                             bitNo:=3,
+	                             alarmDelay:=#ALARM_DELAY,
+	                             alarmInd=>#statWCalarms.noWaterPumpsFlow,
+	                             alarmWord:=#statAlarmWord3);
+	    
+	    //Cooling Motor Temp Fault - Alarm Word 3, bit 4
+	    #instSetCoolingMotorTempFault(enable:=TRUE,
+	                                  setAlarm:=#equipStatus.statusWaterCoolerUnit.coolingMotorTempFault,
+	                                  bitNo:=4,
+	                                  reset:=#statResetCmd,
+	                                  alarmDelay:=#ALARM_DELAY,
+	                                  alarmInd=>#statWCalarms.coolingMotorTempFault,
+	                                  alarmWord:=#statAlarmWord3);
+	    
+	    //Cooling Flow overboard fault - Alarm Word 3, bit 5
+	    #instSetNoFlowOverboardFault(enable:=TRUE,
+	                                 setWarning:=#statRunningMode AND
+	                                 NOT #equipStatus.statusWaterCoolerUnit.flowCoolerOK,
+	                                 bitNo:=5,
+	                                 alarmDelay:=#ALARM_DELAY,
+	                                 alarmInd=>#statWCalarms.noCoolerFlowOutboard,
+	                                 alarmWord:=#statAlarmWord3);
+	    
+	    //Cooling Liquid Temperature High - Alarm Word 3, bit 6
+	    #instSetCoolingLiquidTempHigh(enable:=TRUE,
+	                                  setAlarm:=#equipStatus.statusWaterCoolerUnit.tempControlCoolingLiquid,
+	                                  bitNo:=6,
+	                                  reset:=#statResetCmd,
+	                                  alarmDelay:=#ALARM_DELAY,
+	                                  alarmInd=>#statWCalarms.coolingLiquidTempHigh,
+	                                  alarmWord:=#statAlarmWord3);
+	    //Brake Resistor Temp High-High - Alarm Word 3, bit 7
+	    #instBrakeResTempHiHiAlarm(enable:=TRUE,
+	                               setAlarm:=#equipStatus.statusMainPanelEquip.brakeResistorTempHighIn,
+	                               bitNo:=7,
+	                               reset:=#statResetCmd,
+	                               alarmDelay:=#ALARM_DELAY,
+	                               alarmInd=>#statVFD_Alarms.xBrakeResistorTempHiHi,
+	                               alarmWord:=#statAlarmWord3);
+	    //VFD Warning - Alarm Word 3, bit 8
+	    #instVFD_Warning(enable:=TRUE,
+	                     setWarning:=#equipStatus.statusMotorVFD.driveWarning,
+	                     bitNo:=8,
+	                     alarmDelay:=#ALARM_DELAY,
+	                     alarmInd=>#statVFD_Alarms.xVFD_Warning,
+	                     alarmWord:=#statAlarmWord3);
+	    //VFD Alarm - Alarm Word 3, bit 9
+	    #instVFD_Alarm(enable:=TRUE,
+	                   setAlarm:=#equipStatus.statusMotorVFD.driveFault,
+	                   bitNo:=9,
+	                   reset:=#statResetCmd,
+	                   alarmDelay:=#ALARM_DELAY,
+	                   alarmInd=>#statVFD_Alarms.xVFD_Alarm,
+	                   alarmWord:=#statAlarmWord3);
+	    //Payout at Maximum - Alarm Word 3, bit 10
+	    #instPayoutAtMaxWarning(enable:=TRUE,
+	                            setWarning:=#equipStatus.statusWinchDrum.payoutAtMaximum,
+	                            bitNo:=10,
+	                            alarmDelay:=#ALARM_DELAY,
+	                            alarmWord:=#statAlarmWord3);
+	    
+	    
+	    
+	    
+	    
+	  END_REGION SET ALARMS
+	  
+	  REGION SET SHUTDOWNS
+	
+	    //Main Panel E-Stop Activated Shutdown - Shutdown Word, bit 0
+	    #instSetMainPanelEstopShutdown(enable:=TRUE,
+	                                   setAlarm:=#mpCmds.mpEmergencyStopCmd,
+	                                   reset:=#statResetCmd,
+	                                   alarmDelay:=#ALARM_DELAY,
+	                                   alarmInd=>#statGeneralShutdowns.mainPLCEstopActivated,
+	                                   alarmWord:=#statShutdownWord);
+	    
+	    //Wheel House E-Stop Activated shutdown - Shutdown Word, bit 1
+	    #instSetWH_EstopShutdown(enable:=TRUE,
+	                             setAlarm:=#bridgeCmds.bridgeEmergencyStopCmd,
+	                             bitNo:=1,
+	                             reset:=#statResetCmd,
+	                             alarmDelay:=#ALARM_DELAY,
+	                             alarmInd=>#statGeneralShutdowns.wheelhouseEstopStopActivated,
+	                             alarmWord:=#statShutdownWord);
+	    
+	    //Deck E-Stop Activated Shutdown - Shutdown Word, bit 2
+	    #instSetDeckEstopShutdown(enable:=TRUE,
+	                              setAlarm:=#deckCmds.deckEmergencyStopCmd,
+	                              bitNo:=2,
+	                              reset:=#statResetCmd,
+	                              alarmDelay:=#ALARM_DELAY,
+	                              alarmInd=>#statGeneralShutdowns.deckConsoleEstopActivated,
+	                              alarmWord:=#statShutdownWord);
+	    
+	    //Cooling Tank Level Low-Low Shutdown - Shutdown Word, bit 3
+	    #instSetCoolingLevelLowLowShutdown(enable:=TRUE,
+	                                       setAlarm:=#equipStatus.statusWaterCoolerUnit.tankLevelLowLow,
+	                                       bitNo:=3,
+	                                       reset:=#statResetCmd,
+	                                       alarmDelay:=#ALARM_DELAY,
+	                                       alarmInd=>#statWCshutdowns.tankLevelLowLow,
+	                                       alarmWord:=#statShutdownWord);
+	    
+	    
+	  END_REGION SET SHUTDOWNS
+	  //complare alarms with alarms from previous cycle and if they changed, reset acknowledge status
+	  //overwise set it if there is an acknowledge command
+	  IF (#statAlarmWord1 <> #statAlarmWord1Previous) OR
+	    (#statAlarmWord2 <> #statAlarmWord2Previous) OR
+	    (#statAlarmWord3 <> #statAlarmWord3Previous) THEN
+	    #statAlarmsAcknowledged := FALSE;
+	  ELSIF #bridgeCmds.bridgeAlarmAcknCmd OR #mpCmds.mpAlarmAcknCmd THEN
+	    #statAlarmsAcknowledged := true;
+	  END_IF;
+	  //save the status for next cyce
+	  #statAlarmWord1Previous := #statAlarmWord1;
+	  #statAlarmWord2Previous := #statAlarmWord2;
+	  #statAlarmWord3Previous := #statAlarmWord3;
+	  
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  
+	  #alarmWord := #statAlarmWord1;
+	  #alarmWord2 := #statAlarmWord2;
+	  #alarmWord3 := #statAlarmWord3;
+	  #shutdownWord := #statShutdownWord;
+	  #alarmsAcknowledged := #statAlarmsAcknowledged;
+	  IF #statAlarmWord1 > 0 OR #statAlarmWord2 > 0 OR #statAlarmWord3 > 0 THEN
+	    #alarmActive := TRUE;
+	  ELSE
+	    #alarmActive := FALSE;
+	  END_IF;
+	  IF #statShutdownWord > 0 THEN
+	    #shutdownActive := TRUE;
+	  ELSE
+	    #shutdownActive := FALSE;
+	  END_IF;
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

@@ -1,0 +1,867 @@
+﻿TYPE "typePI4_In"
+VERSION : 0.1
+   STRUCT
+      i_wPI1_SW { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Status WordBit8 : Bool;   // Bits 8-15 Inverter status if bit 5 = 0Bit9 : Bool;   // 0x01 = STO safe Torque Off activeBit10 : Bool;   // 0x02 = No enableBit11 : Bool;   // 0x05 = Speed controlBit12  : Bool;   // 0x06 = Torque controlBit13  : Bool;   // 0x0A = Technology functionBit14 : Bool;   // 0x0C = Reference travelBit15 : Bool;Bit0_Enabled : Bool;   // 0:locked, 1: enabledBit1_Ready : Bool;   // 0: not ready, 1: readyBit2_DataEnabled : Bool;   // 1 if P1-12 = 5Bit3_Reserved : Bool;Bit4_Reserved : Bool;Bit5_Fault/Warning : Bool;Bit6_PosLimitSwActive : Bool;   // 0: locked, 1: enabledBit7_NegLimitSwActive : Bool;   // 0: locked, 1: enabled
+      i_wPI2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Actual Speed by default, configurable P5-12
+      i_wPI3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Actual Current by default, configurable P5-13
+      i_wPI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable P5-14
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typePO4_Out"
+VERSION : 0.1
+   STRUCT
+      q_wPO1_CW : Word;   // Control Wordq_xReserved8 : Bit 8q_xReserved9 : Bit 9q_xReserved10 : Bit 10q_xReserved11 : Bit 11q_xReserved12 : Bit 12q_xReserved13 : Bit 13q_xReserved14 : Bit 14q_xReserved15 : Bit 15q_xOFF1 : Bit 0 - Inhibitq_xOFF2 : Bit 1 - Rapid stopq_xOFF3 : Bit 2 - Ramp stopq_xReserved3 : Bit 3q_xReserved4 : Bit 4q_xReserved5 : Bit 5q_xFaultReset : Bit 6 - Fault resetq_xReserved7 : Bit 7
+      q_wPO2_speedRef { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable, Speed Reference by default, P5-09
+      q_wPO3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable, P5-10
+      q_wPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Configurable, P5-11
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeDriveControl"
+VERSION : 0.1
+   STRUCT
+      xDriveEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveRun { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveEmergencyStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      iDriveSpeedRef_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeDriveStatus"
+VERSION : 0.1
+   STRUCT
+      xDriveRunning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveFaultStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      xDriveWarning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveWarningStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      iDriveActualSpeed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeAnalogLevelSensor"
+VERSION : 0.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         i_xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_iCurrentInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         i_iMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         i_iMinInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         q_xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // bit0-overflow; bit1-input range; bit2-output range; bit3-underflow
+         q_rLevel { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeAnalogTemperatureSensor"
+VERSION : 0.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         rSensorZeroTemperature { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // temperature at zero sensor reading
+         xCalibration { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         rCalibrationTemperature { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+         iMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         iMinInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // bit0-overflow;
+         rTemperature { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      END_STRUCT;
+      inputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware inputs to the block
+         i_dAnalogIN { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeConveyorPalletWasherSEW_Interface"
+VERSION : 0.1
+   STRUCT
+      commands : Struct   // logical inputs to the block
+         xEnable : Bool;
+         xSafetyIsOk : Bool;
+         xStart : Bool;
+         xStop : Bool;
+         xConveyorFullStatus : Bool;
+         xReset : Bool;   // reset faults
+         xMaintenance : Bool;   // maintenance mode
+         xRunConvInMaintenance : Bool;   // run conveyor in maintenance mode
+         xRunPreRinseInMaintenance : Bool;   // run pre-rinse pump in maintenance mode
+         xRunWashingInMaintenance : Bool;   // run washing pump in maintenance mode
+         xOpenPreRinseMakeUpValveInMaintenance : Bool;   // open pre-rinse make-up valve in maintenance mode
+         xOpenWashingMakeUpValveInMaintenance : Bool;   // open washing make-up valve in maintenance mode
+         rConveyorSpeed_percent : Real;
+         rConveyorSpeedInMaintenance_percent : Real;
+         rWashPumpSpeed_percent : Real;
+         rWashPumpSpeedInMaintenance_percent : Real;
+         tStartOffDelay : Time;   // delay before the conveyor stops after the start command removed
+         tStopOnDelay : Time;   // delay before the conveyor stops after the stop command received 
+         tFullOnDelay : Time;   // delay before the conveyor stops after the full status is detected
+         xTankTempCalibrationEnable : Bool;
+         rWashingTankTempCalibration : Real;
+         rConveyorLength_cm : Real := 100.0;   // conveyor length in cm
+      END_STRUCT;
+      status : Struct   // logical outputs from the block
+         iPreRinseTankLevel : Real;
+         iWashingTankLevel : Real;
+         iWashingTankTemperature : Real;
+         xFault : Bool;
+         wFaultCode : Word;   // bit0: conveyor motor fault bit1: pre-rinse pump fault bit3: washing pump fault bit2: auger motor fault bit4: pre-rinse tank level sensor fault bit5: washing tank level sensor fault bit6: washing tank temperature sensor fault
+         iConvStatus : USInt;   // 0-stopped and ready, 1-running, 2-stopped and full, 3-faulty, 4-estopped, 5-maintenance
+         iWasherStatus : USInt;   // 0-stopped, 1-Pre-Rinse, 2-Washing, 3-Pause, 4-Emergency stop, 5-Fault, 6-maintenance
+         xPreRinseRunning { ExternalWritable := 'False'} : Bool;
+         xWashingRunning { ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+      inputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware inputs to the block
+         i_xAugerMotorFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_xPreRinsePumpFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_iConveyorSEWdrivePI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePI4_In";
+         i_iWashPumpSEWdrivePI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePI4_In";
+         i_iPreRinseTankLevel { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         i_iWashingTankLevel { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         i_iWashingTemperature { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+      outputs : Struct   // hardware outputs from the block
+         q_iConveyorSEWdrivePO4 { S7_SetPoint := 'False'} : "typePO4_Out";
+         q_iWashPumpSEWdrivePO4 { S7_SetPoint := 'False'} : "typePO4_Out";
+         q_xPreRinsePump : Bool;
+         q_xPreRinseMakeUpValve : Bool;
+         q_xWashingMakeUpValve : Bool;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "classDriveSEW"
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 0.2
+   VAR_INPUT 
+      driveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";   // control signals for the drive from the PLC
+      inPI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePI4_In";   // input PZD telegram from the drive
+   END_VAR
+
+   VAR_OUTPUT 
+      driveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";   // status of the drive for the PLC
+      outPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePO4_Out";   // output PZD telegram to the drive
+   END_VAR
+
+   VAR 
+      statPZD_ReadError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_WriteError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_Out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePO4_Out";
+      statPZD_In { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePI4_In";
+   END_VAR
+
+   VAR CONSTANT 
+      DRIVE_SPEED_REF_MULTIPLIER : Int := 200;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            classDriveSEW function block
+	  // Comment/Function: This function block is the SEW Profinet drive control. 
+	  // Parental class: classDrive
+	  // Library/Family:   LOMS
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-23 | Yuriy Mosiyenko        | Created
+	  // Last update |            | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //the block created from the classDrive template with added SEW drive specific
+	  //from LOMS_SEW_Profinet_Drive code. The version of the block is 0.2, because
+	  //it is actually the next version of the LOMS_SEW_Profinet_Drive block
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	  
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION
+	  //read input PZD telegram from the drive here
+	  #statPZD_In := #inPI4;
+	  ;
+	  
+	  #statPZD_Out.q_wPO1_CW.%X1 := TRUE; //OFF2
+	  #statPZD_Out.q_wPO1_CW.%X2 := TRUE; //OFF3
+	  
+	  
+	  //read status word
+	  #driveStatus.xDriveRunning := #statPZD_In.i_wPI1_SW.%X0;
+	  #driveStatus.xDriveFault := #statPZD_In.i_wPI1_SW.%X5;
+	  
+	  #driveStatus.iDriveActualSpeed := WORD_TO_INT(#statPZD_In.i_wPI2);
+	  
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  //if Drive Ready already we can run the drive
+	  //I DISABLE THIS CONDITION FOR TESTING WITH PLC-LAB. SHOULD BE SET BACK WITH REAL DRIVE
+	  //IF #statPZD_In.i_wPI1_SW.%X1 THEN
+	    //if drive run command received set the CW bit 0
+	    #statPZD_Out.q_wPO1_CW.%X0 := #driveControl.xDriveRun;
+	  //ELSE
+	    //#statPZD_Out.q_wPO1_CW.%X0 := FALSE;
+	  //END_IF;
+	  //if reset command received set CW bit 6
+	  #statPZD_Out.q_wPO1_CW.%X6 := #driveControl.xDriveFaultReset;
+	  
+	  //speed reference
+	  #statPZD_Out.q_wPO2_speedRef := INT_TO_WORD(REAL_TO_INT(#driveControl.iDriveSpeedRef_percent * #DRIVE_SPEED_REF_MULTIPLIER));
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  //write output PZD telegram to the drive here
+	  
+	  #outPO4 := #statPZD_Out;
+	  
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK "classLevelSensor"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+VERSION : 0.1
+   VAR_IN_OUT 
+      io_AnalogLevelSensor : "typeAnalogLevelSensor";
+   END_VAR
+
+   VAR 
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statAnalogInNormalized { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statLevel_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_VAR
+   VAR RETAIN
+      statMinInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor reading at zero percent level
+      statMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor reading at 100 percent level
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            Analog Level Sensor Control
+	  // Comment/Function: Reading analog level sensor and scale the output
+	  //                   in percent. 
+	  //                   Interesting enough I decided to make this class from
+	  //                   the classPressureTransmitter, because the logic is the same, 
+	  //       and I don't want to use calibration here. Although I have
+	  //                   LOMS_AnalogLevelSensorControl, I decided to make this class
+	  //          to simplify the usage of the analog level sensor in the project.
+	  // Parental class:  LOMS - Types - classPressureTransmitter
+	  // Library/Family:   LOMS - Types -
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-27 | Yuriy Mosiyenko        | Created
+	  // Last update |            | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-08-27: Created the class
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	IF #io_AnalogLevelSensor.commands.i_xEnable THEN
+	  REGION INIT
+	    //check for overflow
+	    #statAnalogIn := #io_AnalogLevelSensor.commands.i_iCurrentInputValue;
+	    IF #statAnalogIn > #io_AnalogLevelSensor.commands.i_iMaxInputValue THEN
+	      #io_AnalogLevelSensor.status.q_xError := TRUE;
+	      #statAnalogIn := #io_AnalogLevelSensor.commands.i_iMaxInputValue;
+	      #io_AnalogLevelSensor.status.q_wAlarmWord0.%X0 := TRUE;
+	    ELSE
+	      #io_AnalogLevelSensor.status.q_xError := FALSE;
+	      #io_AnalogLevelSensor.status.q_wAlarmWord0 := 0;
+	    END_IF;
+	    //check for input range
+	    IF #io_AnalogLevelSensor.commands.i_iMinInputValue > #io_AnalogLevelSensor.commands.i_iMaxInputValue THEN
+	      #io_AnalogLevelSensor.status.q_xError := TRUE;
+	      #io_AnalogLevelSensor.status.q_wAlarmWord0.%X1 := TRUE;
+	    END_IF;
+	    //check for underflow
+	    IF #statAnalogIn < #io_AnalogLevelSensor.commands.i_iMinInputValue THEN
+	      #io_AnalogLevelSensor.status.q_xError := TRUE;
+	      #statAnalogIn := #io_AnalogLevelSensor.commands.i_iMinInputValue;
+	      #io_AnalogLevelSensor.status.q_wAlarmWord0.%X2 := TRUE;
+	    END_IF;
+	    
+	    #statMinInputValue := #io_AnalogLevelSensor.commands.i_iMinInputValue;
+	    #statMaxInputValue := #io_AnalogLevelSensor.commands.i_iMaxInputValue;
+	    
+	  END_REGION INIT
+	  
+	  
+	  REGION PROCESS
+	    REGION CALIBRATION
+	      //in the current revision we are not using calibration points, just
+	      //set input and output ranges
+	      ;
+	    END_REGION CALIBRATION
+	    REGION SCALING
+	      //Normalize the input value
+	      #statAnalogInNormalized := INT_TO_REAL((#statAnalogIn - #statMinInputValue)) / INT_TO_REAL((#statMaxInputValue - #statMinInputValue));
+	      //Scale the normalized value to the output range
+	      #statLevel_percent := 100.0 * #statAnalogInNormalized;
+	    END_REGION SCALING    
+	  END_REGION PROCESS
+	  
+	  REGION OUTPUTS
+	    // Write outputs
+	    #io_AnalogLevelSensor.status.q_rLevel := #statLevel_percent;
+	  END_REGION OUTPUTS
+	END_IF;
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK "classAnalogTemperatureSensor"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+VERSION : 0.1
+//Simple Function Block template to write your own
+   VAR_IN_OUT 
+      temperatureSensor : "typeAnalogTemperatureSensor";
+   END_VAR
+
+   VAR 
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statCalibTempRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // difference between temperature in Calibration points in Degrees
+      statCalibReadingsRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // difference between analog card readings in Calibration points
+      statPointsPerDeg { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // calculated number of input points per each degree
+      statTemperatureDeg { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // calibrated temperature in Degrees
+   END_VAR
+   VAR RETAIN
+      statCalibrationReading { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor readings at calibration point
+      statCalibrationTemperature { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // known temp at Calibration
+   END_VAR
+
+   VAR_TEMP 
+      tempVariable : Int;   // temp value for anything
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            Analog temperature Sensor Reading
+	  // Comment/Function: scale analog temperature input based on the calibration.
+	  //                   Calibration function is included. 
+	  // Library/Family:   LOMS - Types -
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-12-04 | Yuriy Mosiyenko        | First released version
+	  // 00.01.00 | 2024-04-30 | Yuriy Mosiyenko        | Replaced discrete input/output
+	  //                                                | variables with library type
+	  //===============================================================================
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2023-12-04 | Yuriy Mosiyenko        | Created
+	  // Last update | 2024-08-27 | Yuriy Mosiyenko        | Renamed
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-08-27: Renamed to classAnalogTemperatureSensor
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	  
+	*/)
+	END_REGION DESCRIPTION
+	IF #temperatureSensor.commands.xEnable THEN
+	  REGION INIT
+	    
+	    #statAnalogIn := #temperatureSensor.inputs.i_dAnalogIN;
+	    
+	    IF #statAnalogIn > #temperatureSensor.commands.iMaxInputValue THEN
+	      #temperatureSensor.status.xError := TRUE;
+	      #statAnalogIn := #temperatureSensor.commands.iMaxInputValue;
+	      #temperatureSensor.status.wAlarmWord0.%X0 := TRUE;
+	    ELSIF #statAnalogIn < #temperatureSensor.commands.iMinInputValue THEN
+	      #temperatureSensor.status.xError := TRUE;
+	      #statAnalogIn := 0;
+	      #temperatureSensor.status.wAlarmWord0.%X1 := TRUE;
+	    ELSE
+	      #temperatureSensor.status.xError := FALSE;
+	      #temperatureSensor.status.wAlarmWord0 := 0;
+	    END_IF;
+	  END_REGION INIT
+	  
+	  
+	  REGION Process
+	    REGION CALIBRATION
+	      IF #temperatureSensor.commands.xCalibration THEN
+	        #statCalibrationTemperature := #temperatureSensor.commands.rCalibrationTemperature;
+	        #statCalibrationReading := #statAnalogIn;
+	      END_IF;
+	    END_REGION CALIBRATION
+	    
+	    REGION SCALING
+	      
+	      #statCalibReadingsRange := #statCalibrationReading;
+	      #statCalibTempRange := #statCalibrationTemperature - #temperatureSensor.commands.rSensorZeroTemperature;
+	      #statPointsPerDeg := #statCalibReadingsRange / #statCalibTempRange;
+	    END_REGION SCALING
+	    
+	    REGION TEMPERATURE CALC
+	      #statTemperatureDeg := (#temperatureSensor.commands.rSensorZeroTemperature + #statAnalogIn / #statPointsPerDeg);
+	    END_REGION TEMPERATURE CALC
+	    
+	    
+	  END_REGION Process
+	  
+	  REGION OUTPUTS
+	    // Write outputs
+	    #temperatureSensor.status.rTemperature := #statTemperatureDeg;
+	  END_REGION OUTPUTS
+	END_IF;
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK "ClassConveyorPalletWasherSEW"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.5
+   VAR_IN_OUT 
+      ConveyorInterface : "typeConveyorPalletWasherSEW_Interface";
+   END_VAR
+
+   VAR 
+      statEnabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statConvState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // Conveyor State Machine Step number
+      statNumberOfConvStates { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt := 5;   // Conveyor State Machine Number of Steps
+      statReadyForConvState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..9] of Bool;
+      statCycleCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // class specific variables
+      statStart { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statFull { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSafetyIsOk { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRunConvInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRunWashInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRunPreRinseInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statOpenPreRinseMakeUpValveInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statOpenWashingMakeUpValveInMaintenance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSpeed_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statSpeedInMaintenance_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statWashPumpSpeed_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statAugerMotorFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statPreRinsePumpFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStartOffTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStopOnTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statFullOnTrigger { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statConvVFDfault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statPreRinsePumpControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statPreRinseMakeUpValveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statWashingMakeUpValveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statPreRinseTankLevel_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statWashingTankLevel_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statWashingTankTemperatureDegC { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statConvDriveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";
+      statConvDriveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";
+      statWashingPumpDriveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";
+      statPreRinsePumpDriveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";
+      statPreRinseTankLevelInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeAnalogLevelSensor";
+      statWashingTankLevelInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeAnalogLevelSensor";
+      statWashingTankTemperatureInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeAnalogTemperatureSensor";   // instances
+      instConveyorStartOffDelay {InstructionName := 'TOF_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TOF_TIME;
+      instConveyorStopOnDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instConveyorFullOnDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instConveyorDrive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "classDriveSEW";
+      instWashPumpDrive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "classDriveSEW";
+      instPreRinseTankLevelSensor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "classLevelSensor";
+      instWashingTankLevelSensor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "classLevelSensor";
+      instWashingTankTemperatureSensor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "classAnalogTemperatureSensor";
+   END_VAR
+
+   VAR CONSTANT 
+      NUMBER_OF_STATES_IN_CONVEYOR_STATE_MACHINE : USInt := 6;   // 0-Conveyor stopped, 1-Conveyor running, 2-Conveyor full, 3-Conveyor fault, 4-Conveyor estopped, 5-Maintenance mode
+      MINIMUM_PRE_RINSE_TANK_LEVEL_PERCENT : Real := 20.0;
+      MINIMUM_WASHING_TANK_LEVEL_PERCENT : Real := 20.0;
+      MAXIMUM_PRE_RINSE_TANK_LEVEL_PERCENT : Real := 90.0;
+      MAXIMUM_WASHING_TANK_LEVEL_PERCENT : Real := 90.0;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // OTOMAKEIT SOLUTIONS / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            ClassConveyorPalletWasherSEW
+	  // Comment/Function: Conveyor class for TIA Portal, using SEW VFD drive. 
+	  //                   This conveyor class is special, because it combines
+	  //                   two basic classes: classConveyor and classPalletWasher
+	  //                   It runs two independent state machines, one for the conveyor
+	  //                   and one for the pallet washer.
+	  //                   
+	  // Parental class:   classConveyorSEW
+	  // Library/Family:   LOMS (Library OtoMakeit Solutions)
+	  // Author:           Yuriy Mosiyenko, Otomakeit Solutions
+	  // Tested with:      
+	  // Engineering:      TIA Portal V17
+	  // Restrictions:     
+	  // Requirements:     PLC (S7-1200 / S7-1500)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-27 | Yuriy Mosiyenko        | Created
+	  // Last update | 2024-08-29 | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-08-27 - created. 
+	  //2024-08-29 - added the maintenance mode
+	  //2024-08-29 - added motor faults routines for auger and washing pump
+	  //2024-08-29 - swapped the prerinse and washing pumps, as the washing pump is 
+	  //             controlled by VFD, and it was wrong in the previous version
+	  //===============================================================================
+	END_REGION
+	
+	REGION INIT
+	  //initialize the conveyor state machine
+	  #statNumberOfConvStates := #NUMBER_OF_STATES_IN_CONVEYOR_STATE_MACHINE;
+	  FOR #statCycleCounter := 0 TO #statNumberOfConvStates DO
+	    #statReadyForConvState[#statCycleCounter] := FALSE;
+	  END_FOR;
+	  
+	END_REGION INIT
+	
+	REGION READ INPUTS
+	  #statEnabled := #ConveyorInterface.commands.xEnable;
+	  #statStart := #ConveyorInterface.commands.xStart;
+	  #statStop := #ConveyorInterface.commands.xStop;
+	  #statFull := #ConveyorInterface.commands.xConveyorFullStatus;
+	  #statReset := #ConveyorInterface.commands.xReset;
+	  #statMaintenance := #ConveyorInterface.commands.xMaintenance;
+	  #statRunConvInMaintenance := #ConveyorInterface.commands.xRunConvInMaintenance;
+	  #statRunWashInMaintenance := #ConveyorInterface.commands.xRunWashingInMaintenance;
+	  #statRunPreRinseInMaintenance := #ConveyorInterface.commands.xRunPreRinseInMaintenance;
+	  #statOpenPreRinseMakeUpValveInMaintenance := #ConveyorInterface.commands.xOpenPreRinseMakeUpValveInMaintenance;
+	  #statOpenWashingMakeUpValveInMaintenance := #ConveyorInterface.commands.xOpenWashingMakeUpValveInMaintenance;
+	  #statSpeed_percent := #ConveyorInterface.commands.rConveyorSpeed_percent;
+	  #statSpeedInMaintenance_percent := #ConveyorInterface.commands.rConveyorSpeedInMaintenance_percent;
+	  #statWashPumpSpeed_percent := #ConveyorInterface.commands.rWashPumpSpeed_percent;
+	  #statSafetyIsOk := #ConveyorInterface.commands.xSafetyIsOk;
+	  #statAugerMotorFault := #ConveyorInterface.inputs.i_xAugerMotorFault;
+	  #statPreRinsePumpFault := #ConveyorInterface.inputs.i_xPreRinsePumpFault;
+	  
+	  //read the tank levels
+	  #statPreRinseTankLevelInterface.commands.i_xEnable := TRUE;
+	  #statPreRinseTankLevelInterface.commands.i_xFaultReset := #ConveyorInterface.commands.xReset;
+	  #statPreRinseTankLevelInterface.commands.i_iCurrentInputValue := #ConveyorInterface.inputs.i_iPreRinseTankLevel;
+	  #statPreRinseTankLevelInterface.commands.i_iMaxInputValue := 27648;
+	  #statPreRinseTankLevelInterface.commands.i_iMinInputValue := 0;
+	  
+	  #instPreRinseTankLevelSensor(#statPreRinseTankLevelInterface);
+	  
+	  #statPreRinseTankLevel_percent := #statPreRinseTankLevelInterface.status.q_rLevel;
+	  #ConveyorInterface.status.iPreRinseTankLevel := #statPreRinseTankLevelInterface.status.q_rLevel;
+	  #ConveyorInterface.status.xFault := #ConveyorInterface.status.xFault OR #statPreRinseTankLevelInterface.status.q_xError;
+	  #ConveyorInterface.status.wFaultCode.%X4 := #statPreRinseTankLevelInterface.status.q_xError;
+	  
+	  #statWashingTankLevelInterface.commands.i_xEnable := TRUE;
+	  #statWashingTankLevelInterface.commands.i_xFaultReset := #ConveyorInterface.commands.xReset;
+	  #statWashingTankLevelInterface.commands.i_iCurrentInputValue := #ConveyorInterface.inputs.i_iWashingTankLevel;
+	  #statWashingTankLevelInterface.commands.i_iMaxInputValue := 27648;
+	  #statWashingTankLevelInterface.commands.i_iMinInputValue := 0;
+	  
+	  #instWashingTankLevelSensor(#statWashingTankLevelInterface);
+	  
+	  #statWashingTankLevel_percent := #statWashingTankLevelInterface.status.q_rLevel;
+	  #ConveyorInterface.status.iWashingTankLevel := #statWashingTankLevelInterface.status.q_rLevel;
+	  #ConveyorInterface.status.xFault := #ConveyorInterface.status.xFault OR #statWashingTankLevelInterface.status.q_xError;
+	  #ConveyorInterface.status.wFaultCode.%X5 := #statWashingTankLevelInterface.status.q_xError;
+	  
+	  //read the tank temperature
+	  #statWashingTankTemperatureInterface.commands.xEnable := TRUE;
+	  #statWashingTankTemperatureInterface.commands.xFaultReset := #ConveyorInterface.commands.xReset;
+	  #statWashingTankTemperatureInterface.commands.iMaxInputValue := 27648;
+	  #statWashingTankTemperatureInterface.commands.iMinInputValue := 0;
+	  #statWashingTankTemperatureInterface.commands.rSensorZeroTemperature := 0.0;
+	  #statWashingTankTemperatureInterface.commands.xCalibration := #ConveyorInterface.commands.xTankTempCalibrationEnable;
+	  #statWashingTankTemperatureInterface.commands.rCalibrationTemperature := #ConveyorInterface.commands.rWashingTankTempCalibration;
+	  
+	  #instWashingTankTemperatureSensor(#statWashingTankTemperatureInterface);
+	  
+	  #statWashingTankTemperatureDegC := #statWashingTankTemperatureInterface.status.rTemperature;
+	  #ConveyorInterface.status.iWashingTankTemperature := #statWashingTankTemperatureInterface.status.rTemperature;
+	  #ConveyorInterface.status.xFault := #ConveyorInterface.status.xFault OR #statWashingTankTemperatureInterface.status.xError;
+	  #ConveyorInterface.status.wFaultCode.%X6 := #statWashingTankTemperatureInterface.status.xError;
+	  
+	  
+	END_REGION READ INPUTS
+	
+	REGION LOGIC
+	  
+	  REGION PRE-STATE MACHINE OPERATIONS
+	    //operations in this block will be implemented in each cycle, disregarding the state
+	    //
+	    //If reset received, reset faults, and set state machine to initial state
+	    IF #statReset THEN
+	      #ConveyorInterface.status.xFault := FALSE;
+	      #ConveyorInterface.status.wFaultCode := 0;
+	      #statConvState := 0;
+	    END_IF;
+	    IF NOT #statEnabled THEN //if the conveyor is disabled, stop it and set the status to 0 (stopped and ready)
+	      #ConveyorInterface.status.iConvStatus := 0;
+	      #statConvState := 0;
+	      #statStart := FALSE;
+	      #statStop := FALSE;
+	    END_IF;
+	    //start off delay
+	    #instConveyorStartOffDelay(IN := #statStart,
+	                               PT := #ConveyorInterface.commands.tStartOffDelay,
+	                               Q => #statStartOffTrigger);
+	    //STOP off delay
+	    #instConveyorStopOnDelay(IN := #statStop,
+	                              PT := #ConveyorInterface.commands.tStopOnDelay,
+	                              Q => #statStopOnTrigger);
+	    //FULL off delay
+	    #instConveyorFullOnDelay(IN := #statFull,
+	                              PT := #ConveyorInterface.commands.tFullOnDelay,
+	                              Q => #statFullOnTrigger);
+	
+	    IF #ConveyorInterface.commands.xEnable THEN
+	      //control pre-rinse tank level
+	      IF #statPreRinseTankLevel_percent < #MINIMUM_PRE_RINSE_TANK_LEVEL_PERCENT THEN
+	        #statPreRinseMakeUpValveControl := TRUE;
+	      ELSIF
+	        #statPreRinseTankLevel_percent > #MAXIMUM_PRE_RINSE_TANK_LEVEL_PERCENT THEN
+	        #statPreRinseMakeUpValveControl := FALSE;
+	      END_IF;
+	      
+	      //control washing tank level
+	      IF #statWashingTankLevel_percent < #MINIMUM_WASHING_TANK_LEVEL_PERCENT THEN
+	        #statWashingMakeUpValveControl := TRUE;
+	      ELSIF
+	        #statWashingTankLevel_percent > #MAXIMUM_WASHING_TANK_LEVEL_PERCENT THEN
+	        #statWashingMakeUpValveControl := FALSE;
+	      END_IF;
+	    END_IF;
+	    
+	    
+	  END_REGION PRE-STATE MACHINE OPERATONS
+	  
+	  REGION STATE MACHINE      
+	    REGION CONVEYOR STATE MACHINE CONTROL
+	      //set the conditions for each state
+	      //state 0 - stopped and ready, state 1 - running, state 2 - stopped and full, state 3 - faulty, state 4 - estopped, state 5 - maintenance mode
+	      //state 0 - if conveyor was full and the full status is removed or conveyor was running and the start or stop command is removed or fault was removed or safety was restored
+	      //keep in mind that the stop command is active if false
+	      #statReadyForConvState[0] := (#statConvState = 2 AND NOT #statFull)
+	      OR (#statConvState = 1 AND (#statStopOnTrigger OR NOT #statStartOffTrigger))
+	      OR (#statConvState = 4 AND #statSafetyIsOk)
+	      OR (#statConvState = 3 AND NOT #statConvVFDfault)
+	      OR (#statConvState = 5 AND NOT #statMaintenance);
+	      
+	      //state 1 - if the conveyor is not full and the safety is ok and the start command is active
+	      #statReadyForConvState[1] := (#statConvState = 0 AND #statStart AND NOT #statStop AND NOT #statFull AND #statSafetyIsOk);
+	      
+	      //state 2 - if the conveyor is full
+	      #statReadyForConvState[2] := (#statConvState < 3 AND #statFullOnTrigger AND #statSafetyIsOk);
+	      
+	      //state 3 - if the VFD fault is detected
+	      #statReadyForConvState[3] := (#statConvState = 1 AND #statConvVFDfault);
+	      
+	      //state 4 - if the safety is not ok
+	      #statReadyForConvState[4] := NOT #statSafetyIsOk;
+	      
+	      //state 5 - if the maintenance mode is active
+	      #statReadyForConvState[5] := (#statConvState = 0 AND #statMaintenance);
+	      
+	      //change state if condition is TRUE
+	      FOR #statCycleCounter := 0 TO #statNumberOfConvStates - 1 DO
+	        IF #statReadyForConvState[#statCycleCounter] THEN
+	          #statConvState := #statCycleCounter;
+	        END_IF;
+	      END_FOR;
+	      
+	      //do not go over the set number of steps 
+	      IF #statConvState >= #statNumberOfConvStates THEN
+	        #statConvState := 0;
+	      END_IF;
+	      
+	      //check auger and washing pump faults
+	      #ConveyorInterface.status.xFault := #ConveyorInterface.status.xFault OR #statAugerMotorFault OR #statPreRinsePumpFault;
+	      #ConveyorInterface.status.wFaultCode.%X2 := #statAugerMotorFault;
+	      #ConveyorInterface.status.wFaultCode.%X3 := #statPreRinsePumpFault;
+	      
+	    END_REGION CONVEYOR STATE MACHINE CONTROL
+	    
+	    
+	    REGION STATE MACHINE STEPS
+	      //Conveyor State Machine
+	      CASE #statConvState OF
+	        0://STATE 0 - stopped and ready
+	          #statConvDriveControl.xDriveEnable := #statEnabled;
+	          #statConvDriveControl.xDriveRun := FALSE;
+	          #statConvDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statConvDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statPreRinsePumpControl := FALSE;
+	          #statWashingPumpDriveControl.xDriveRun := FALSE;
+	          #statWashingPumpDriveControl.xDriveEnable := #statEnabled;
+	          #statWashingPumpDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statWashingPumpDriveControl.iDriveSpeedRef_percent := 0.0;
+	        1://STATE 1 - running
+	          #statConvDriveControl.xDriveEnable := #statEnabled;
+	          #statConvDriveControl.xDriveRun := TRUE;
+	          #statConvDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statConvDriveControl.iDriveSpeedRef_percent := #statSpeed_percent;
+	          #statPreRinsePumpControl := TRUE;
+	          #statWashingPumpDriveControl.xDriveEnable := #statEnabled;
+	          #statWashingPumpDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statWashingPumpDriveControl.xDriveRun := TRUE;
+	          #statWashingPumpDriveControl.iDriveSpeedRef_percent := #statWashPumpSpeed_percent;
+	        2://STATE 2 - stopped and full
+	          #statConvDriveControl.xDriveEnable := #statEnabled;
+	          #statConvDriveControl.xDriveRun := FALSE;
+	          #statConvDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statConvDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statPreRinsePumpControl := FALSE;
+	          #statWashingPumpDriveControl.xDriveRun := FALSE;
+	          #statWashingPumpDriveControl.xDriveEnable := #statEnabled;
+	          #statWashingPumpDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statWashingPumpDriveControl.iDriveSpeedRef_percent := 0.0;
+	        3://STATE 3 - faulty
+	          #statConvDriveControl.xDriveEnable := false;
+	          #statConvDriveControl.xDriveRun := FALSE;
+	          #statConvDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statConvDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statPreRinsePumpControl := FALSE;
+	          #statWashingPumpDriveControl.xDriveRun := FALSE;
+	          #statWashingPumpDriveControl.xDriveEnable := #statEnabled;
+	          #statWashingPumpDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statWashingPumpDriveControl.iDriveSpeedRef_percent := 0.0;
+	        4://STATE 4 - estopped
+	          #statConvDriveControl.xDriveEnable := #statEnabled;
+	          #statConvDriveControl.xDriveRun := FALSE;
+	          #statConvDriveControl.xDriveEmergencyStop := false;
+	          #statConvDriveControl.iDriveSpeedRef_percent := 0.0;
+	          #statPreRinsePumpControl := FALSE;
+	          #statWashingPumpDriveControl.xDriveRun := FALSE;
+	          #statWashingPumpDriveControl.xDriveEnable := FALSE;
+	          #statWashingPumpDriveControl.xDriveEmergencyStop := FALSE;
+	          #statWashingPumpDriveControl.iDriveSpeedRef_percent := 0.0;
+	        5://STATE 5 - maintenance mode
+	          #statConvDriveControl.xDriveEnable := #statEnabled;
+	          #statConvDriveControl.xDriveRun := #statRunConvInMaintenance;
+	          #statConvDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statConvDriveControl.iDriveSpeedRef_percent := #statSpeedInMaintenance_percent;
+	          #statPreRinsePumpControl := #statRunPreRinseInMaintenance;
+	          #statWashingPumpDriveControl.xDriveEnable := #statEnabled;
+	          #statWashingPumpDriveControl.xDriveRun := #statRunWashInMaintenance;
+	          #statWashingPumpDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statWashingPumpDriveControl.iDriveSpeedRef_percent := #statWashPumpSpeed_percent;
+	          #statPreRinseMakeUpValveControl := #statOpenPreRinseMakeUpValveInMaintenance;
+	          #statWashingMakeUpValveControl := #statOpenWashingMakeUpValveInMaintenance;
+	        ELSE
+	          #statConvDriveControl.xDriveEnable := false;
+	          #statConvDriveControl.xDriveRun := FALSE;
+	          #statConvDriveControl.xDriveEmergencyStop := #statSafetyIsOk;
+	          #statConvDriveControl.iDriveSpeedRef_percent := 0.0;
+	      END_CASE;
+	      
+	 
+	    END_REGION STATE MACHINE STEPS
+	    
+	  END_REGION STATE MACHINE
+	  
+	  REGION POST-STATE MACHINE OPERATIONS
+	    //operations in this block will be implemented in each cycle, disregarding the state  
+	    
+	  END_REGION POST-STATE MACHINE OPERATONS
+	  
+	END_REGION LOGIC
+	
+	REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+	  //conveyor drive control
+	  #instConveyorDrive(driveControl := #statConvDriveControl,
+	                     inPI4 := #ConveyorInterface.inputs.i_iConveyorSEWdrivePI4,
+	                     driveStatus => #statConvDriveStatus,
+	                     outPO4 => #ConveyorInterface.outputs.q_iConveyorSEWdrivePO4);
+	  
+	  #ConveyorInterface.status.xFault := #ConveyorInterface.status.xFault OR #statConvDriveStatus.xDriveFault;
+	  #ConveyorInterface.status.wFaultCode.%X0 := #statConvDriveStatus.xDriveFault;
+	  #ConveyorInterface.status.iConvStatus := #statConvState;
+	  
+	  //washing pump drive control
+	  #instWashPumpDrive(driveControl := #statWashingPumpDriveControl,
+	                     inPI4 := #ConveyorInterface.inputs.i_iWashPumpSEWdrivePI4,
+	                     driveStatus => #statPreRinsePumpDriveStatus,
+	                     outPO4 => #ConveyorInterface.outputs.q_iWashPumpSEWdrivePO4);
+	  #ConveyorInterface.status.xFault := #ConveyorInterface.status.xFault OR #statPreRinsePumpDriveStatus.xDriveFault;
+	  #ConveyorInterface.status.wFaultCode.%X1 := #statPreRinsePumpDriveStatus.xDriveFault;
+	  #ConveyorInterface.status.iWasherStatus := #statConvState;
+	  #ConveyorInterface.status.xWashingRunning := #statWashingPumpDriveControl.xDriveRun;
+	  
+	  //pre-rinse pump control
+	  #ConveyorInterface.outputs.q_xPreRinsePump := #statPreRinsePumpControl;
+	  #ConveyorInterface.status.xPreRinseRunning := #statPreRinsePumpControl;
+	  
+	  
+	  //pre-rinse make-up valve control
+	  #ConveyorInterface.outputs.q_xPreRinseMakeUpValve := #statPreRinseMakeUpValveControl;
+	  
+	  //washing make-up valve control
+	  #ConveyorInterface.outputs.q_xWashingMakeUpValve := #statWashingMakeUpValveControl;
+	  
+	END_REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+END_FUNCTION_BLOCK
+

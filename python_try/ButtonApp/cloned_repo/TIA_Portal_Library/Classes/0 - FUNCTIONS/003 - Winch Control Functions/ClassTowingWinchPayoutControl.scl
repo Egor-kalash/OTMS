@@ -1,0 +1,194 @@
+﻿TYPE "typeWinchPayoutControlInterface"
+VERSION : 0.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         xOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      END_STRUCT;
+      inputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware inputs to the block
+         i_xIN { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+      outputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware outputs from the block
+         q_xOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "ClassTowingWinchPayoutControl"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_IN_OUT 
+      InOutPayoutControlInterfaceType : "typeWinchPayoutControlInterface";
+   END_VAR
+
+   VAR 
+      statIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statInput { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instTimeDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      statState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // State Machine Step number
+      statNumberOfStates { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt := 1;   // State Machine Number of Steps
+      statReadyForState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..9] of Bool;
+      statCycleCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;
+   END_VAR
+
+   VAR CONSTANT 
+      NUMBER_OF_STATES_IN_STATE_MACHINE : USInt := 1;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // OTOMAKEIT SOLUTIONS / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            ClassTowingWinchPayoutControl
+	  // Comment/Function: This is the Towing winch payout control function. It is created
+	  //                   for D2406160 project (Hawboldt Industries RFP Towing Winch 
+	  //     			   for VSY), but can be used in any other project as a template.	  
+	  // Parental class:   LOMS_InOutTypeFB
+	  // Library/Family:   LOMS (Library OtoMakeit Solutions)
+	  // Author:           Yuriy Mosiyenko, Otomakeit Solutions
+	  // Tested with:      
+	  // Engineering:      TIA Portal V17
+	  // Restrictions:     
+	  // Requirements:     PLC (S7-1200 / S7-1500)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|---------------------------
+	  // Created     | 2024-10-09 | Yuriy Mosiyenko        | Created
+	  // Last update |            | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-10-09 - Created
+	  //===============================================================================
+	END_REGION
+	
+	REGION INIT
+	  #statNumberOfStates := #NUMBER_OF_STATES_IN_STATE_MACHINE;
+	  FOR #statCycleCounter:=0 TO #statNumberOfStates DO
+	    #statReadyForState[#statCycleCounter] := FALSE;
+	  END_FOR;
+	  
+	END_REGION INIT
+	
+	REGION READ INPUTS
+	    
+	END_REGION READ INPUTS
+	
+	REGION LOGIC
+	    
+	    REGION PRE-STATE MACHINE OPERATIONS
+	        //operations in this block will be implemented in each cycle, disregarding the state
+	        //if the block is event-oriented, not sequence-oriented, put all the logic here. State
+	        //machine block can be deleted in this case. 
+	        
+	    END_REGION PRE-STATE MACHINE OPERATONS
+	    
+	    REGION STATE MACHINE      
+	      REGION STATE MACHINE CONTROL
+	        //check conditions to change state
+	        //replace FALSE with the condition
+	        #statReadyForState[0] := FALSE;
+	        #statReadyForState[1] := FALSE;
+	        #statReadyForState[2] := FALSE;
+	        #statReadyForState[3] := FALSE;
+	        #statReadyForState[4] := FALSE;
+	        #statReadyForState[5] := FALSE;
+	        #statReadyForState[6] := FALSE;
+	        #statReadyForState[7] := FALSE;
+	        #statReadyForState[8] := FALSE;
+	        #statReadyForState[9] := FALSE;
+	        
+	        //change state if condition is TRUE
+	        FOR #statCycleCounter := 0 TO #statNumberOfStates-1 DO
+	          IF #statReadyForState[#statCycleCounter] THEN
+	            #statState := #statCycleCounter;
+	          END_IF;
+	        END_FOR;
+	        
+	        //do not go over the set number of steps 
+	        IF #statState >= #statNumberOfStates THEN
+	          #statState := 0;
+	        END_IF;
+	        
+	      END_REGION STATE MACHINE CONTROL
+	      
+	      REGION STATE MACHINE STEPS
+	        CASE #statState OF
+	          0://STATE 0
+	            REGION STATE 0
+	              //operations in this block will be implemented only in this state
+				;
+				END_REGION STATE 0	            
+	          1://STATE 1
+				REGION STATE 1
+	              //operations in this block will be implemented only in this state
+	            ;
+				END_REGION STATE 1
+	          2://STATE 2
+				REGION STATE 2
+	              //operations in this block will be implemented only in this state
+	            ;
+				END_REGION STATE 2
+	          3://STATE 3
+				REGION STATE 3
+	              //operations in this block will be implemented only in this state
+	            ;
+				END_REGION STATE 3
+	          4://STATE 4
+				REGION STATE 4
+	              //operations in this block will be implemented only in this state
+	            ;
+				END_REGION STATE 4
+	          5://STATE 5
+				REGION STATE 5
+	              //operations in this block will be implemented only in this state
+	            ;
+				END_REGION STATE 5
+	          6://STATE 6
+				REGION STATE 6
+	              //operations in this block will be implemented only in this state
+	            ;
+				END_REGION STATE 6
+	          7://STATE 7
+				REGION STATE 7
+	              //operations in this block will be implemented only in this state
+	            ;
+				END_REGION STATE 7
+	          8://STATE 8
+				REGION STATE 8
+	              //operations in this block will be implemented only in this state
+	            ;
+				END_REGION STATE 8
+	          9://STATE 9
+				REGION STATE 9
+	              //operations in this block will be implemented only in this state
+	            ;
+				END_REGION STATE 9
+	          ELSE
+	            ;
+	        END_CASE;
+	      END_REGION STATE MACHINE STEPS
+	      
+	    END_REGION STATE MACHINE
+	    
+	    REGION POST-STATE MACHINE OPERATIONS
+	        //operations in this block will be implemented in each cycle, disregarding the state  
+	        
+	    END_REGION POST-STATE MACHINE OPERATONS
+	    
+	END_REGION LOGIC
+	
+	REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+	    
+	END_REGION WRITE OUTPUTS, CALL SUBFUNCTIONS
+END_FUNCTION_BLOCK
+

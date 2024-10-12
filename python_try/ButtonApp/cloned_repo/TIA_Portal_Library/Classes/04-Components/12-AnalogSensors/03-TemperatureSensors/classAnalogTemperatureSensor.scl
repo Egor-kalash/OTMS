@@ -1,0 +1,139 @@
+﻿TYPE "typeAnalogTemperatureSensor"
+VERSION : 1.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         rSensorZeroTemperature { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real; // temperature at zero sensor reading
+         xCalibration { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         rCalibrationTemperature { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+         iMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+		 iMinInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // bit0-overflow; 
+         rTemperature { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      END_STRUCT;
+      inputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware inputs to the block
+         i_dAnalogIN { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "classAnalogTemperatureSensor"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_IN_OUT 
+      temperatureSensor : "typeAnalogTemperatureSensor";
+   END_VAR
+
+   VAR 
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statCalibTempRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // difference between temperature in Calibration points in Degrees
+      statCalibReadingsRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // difference between analog card readings in Calibration points
+      statPointsPerDeg { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // calculated number of input points per each degree
+      statTemperatureDeg { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // calibrated temperature in Degrees
+   END_VAR
+   VAR RETAIN
+      statCalibrationReading { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor readings at calibration point
+      statCalibrationTemperature { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // known temp at Calibration
+   END_VAR
+
+   VAR_TEMP 
+      tempVariable : Int;   // temp value for anything
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            Analog temperature Sensor Reading
+	  // Comment/Function: scale analog temperature input based on the calibration.
+	  //                   Calibration function is included. 
+	  // Library/Family:   LOMS - Types -
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-12-04 | Yuriy Mosiyenko        | First released version
+	  // 00.01.00 | 2024-04-30 | Yuriy Mosiyenko        | Replaced discrete input/output
+	  //                                                | variables with library type
+	  //===============================================================================
+      // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2023-12-04 | Yuriy Mosiyenko        | Created
+	  // Last update | 2024-08-27 | Yuriy Mosiyenko        | Renamed
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-08-27: Renamed to classAnalogTemperatureSensor
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	  
+	*/)
+	END_REGION DESCRIPTION
+	IF #temperatureSensor.commands.xEnable THEN
+	  REGION INIT
+	
+	    #statAnalogIn := #temperatureSensor.inputs.i_dAnalogIN;
+	
+	    IF #statAnalogIn > #temperatureSensor.commands.iMaxInputValue THEN
+	      #temperatureSensor.status.xError := TRUE;
+	      #statAnalogIn := #temperatureSensor.commands.iMaxInputValue;
+	      #temperatureSensor.status.wAlarmWord0.%X0 := TRUE;
+	    ELSIF #statAnalogIn < temperatureSensor.commands.iMinInputValue THEN
+	      #temperatureSensor.status.xError := TRUE;
+	      #statAnalogIn := 0;
+	      #temperatureSensor.status.wAlarmWord0.%x1 := TRUE;
+	    ELSE
+	      #temperatureSensor.status.xError := FALSE;
+	      #temperatureSensor.status.wAlarmWord0 := 0;
+	    END_IF;
+	  END_REGION INIT
+	  
+	  
+	  REGION Process
+	    REGION CALIBRATION
+	      IF #temperatureSensor.commands.xCalibration THEN
+	        #statCalibrationTemperature := #temperatureSensor.commands.rCalibrationTemperature;
+	        #statCalibrationReading := #statAnalogIn;
+	      END_IF;
+	    END_REGION CALIBRATION
+	    
+	    REGION SCALING
+	      
+	      #statCalibReadingsRange := #statCalibrationReading;
+	      #statCalibTempRange := #statCalibrationTemperature - #temperatureSensor.commands.rSensorZeroTemperature;
+	      #statPointsPerDeg := #statCalibReadingsRange / #statCalibTempRange;
+	    END_REGION SCALING
+	    
+	    REGION TEMPERATURE CALC
+	      #statTemperatureDeg := (#temperatureSensor.commands.rSensorZeroTemperature + #statAnalogIn / #statPointsPerDeg);
+	    END_REGION TEMPERATURE CALC
+	    
+	    
+	  END_REGION Process
+	  
+	  REGION OUTPUTS
+	    // Write outputs
+	    #temperatureSensor.status.rTemperature := #statTemperatureDeg;
+	  END_REGION OUTPUTS
+	END_IF;
+END_FUNCTION_BLOCK
+

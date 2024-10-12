@@ -1,0 +1,51 @@
+﻿FUNCTION_BLOCK "ClassOberlandTrayWashingIOmap"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.2
+   VAR_IN_OUT 
+      InOutLineInterface : "typeOberlandTrayWashingLineInterface";
+	  InOutControlInterface : "typeOberlandTrayWashingControl";
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // OTOMAKEIT SOLUTIONS / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            ClassOberlandTrayWashingIOmap function block
+	  // Comment/Function: the only role of this block is to map the inputs and outputs
+	  //                   of the program to the hardware.
+	  //                   ATTENTION: this block is not REUSABLE. It is specific to the
+	  //                   Oberland Tray Washing machine. Because it calls hardware IO
+	  //                   tags from inside the block.
+	  // Parental class:   LOMS_InOutTypeFB
+	  // Library/Family:   LOMS (Library OtoMakeit Solutions)
+	  // Author:           Yuriy Mosiyenko, Otomakeit Solutions
+	  // Tested with:      CPU1215FC DC/DC/Relay
+	  // Engineering:      TIA Portal V17
+	  // Restrictions:     
+	  // Requirements:     PLC (S7-1200 / S7-1500)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|---------------------------
+	  // Created     | 2024-08-29 | Yuriy Mosiyenko        | Created
+	  // Last update |            | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-08-29 - Created
+	  //===============================================================================
+	END_REGION
+
+	REGION READ INPUTS
+	    
+	END_REGION READ INPUTS
+	
+	
+	
+	REGION WRITE OUTPUTS
+	    
+	END_REGION WRITE OUTPUTS
+END_FUNCTION_BLOCK
+

@@ -1,0 +1,51 @@
+﻿FUNCTION_BLOCK "SetAlarms"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      enable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            SetAlarms
+	  // Comment/Function: Set all equipment alarms
+	  //                   
+	  // Library/Family:   
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-30 | Yuriy Mosiyenko        | started
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION  
+	  
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

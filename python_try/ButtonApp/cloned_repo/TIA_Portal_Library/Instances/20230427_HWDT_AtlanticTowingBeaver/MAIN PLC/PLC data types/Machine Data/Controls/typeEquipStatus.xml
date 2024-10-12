@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V17" />
+  <DocumentInfo>
+    <Created>2024-10-09T16:19:47.4474524Z</Created>
+    <ExportSetting>WithDefaults</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V17</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>TIA Portal Openness</DisplayName>
+        <DisplayVersion>V17</DisplayVersion>
+      </OptionPackage>
+      <OptionPackage>
+        <DisplayName>TIA Portal Version Control Interface</DisplayName>
+        <DisplayVersion>V17</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V17</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>STEP 7 Safety</DisplayName>
+        <DisplayVersion>V17</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>WinCC Advanced</DisplayName>
+        <DisplayVersion>V17</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="None">
+    <Member Name="statusAirPressureUnit" Datatype="&quot;typeAirPressureStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">false</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="supply24VPneumaticCabinetOn" Datatype="Bool" /><Member Name="supply24VPneumaticFault" Datatype="Bool" /><Member Name="airUnitPressureOk" Datatype="Bool" /><Member Name="bandClutchEnabled" Datatype="Bool" /><Member Name="bandBrakeReleased" Datatype="Bool" /></Section></Sections></Member>
+    <Member Name="statusHydraulicUnit" Datatype="&quot;typeHydraulicStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="supplyHydraulicFault" Datatype="Bool" /><Member Name="pressureLowGearIn" Datatype="Bool" /><Member Name="pressureHighGearIn" Datatype="Bool" /><Member Name="hydraulicMotorThermFaultIn" Datatype="Bool" /><Member Name="supplyHydraulicsContactorIn" Datatype="Bool" /><Member Name="dynamicBrakeEnabled" Datatype="Bool" /><Member Name="dynamicBrakeSetpoint" Datatype="Real" /></Section></Sections></Member>
+    <Member Name="statusMainPanelEquip" Datatype="&quot;typeMainPanelEquipmentStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="redShoreSuppIn" Datatype="Bool" /><Member Name="brakeResistorTempHighIn" Datatype="Bool" /><Member Name="mainSupplyFaultIn" Datatype="Bool" /><Member Name="supplyControlsFaultIn" Datatype="Bool" /><Member Name="supplyACHeatingFaultIn" Datatype="Bool" /><Member Name="supplyBackup24VdcFaultIn" Datatype="Bool" /></Section></Sections></Member>
+    <Member Name="statusMotorContactor" Datatype="&quot;typeMainContactorStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="mainSwitchIn" Datatype="Bool" /><Member Name="mainContactorIn" Datatype="Bool" /><Member Name="mainContactorError" Datatype="Bool" /><Member Name="mainContactorErrorStatus" Datatype="Word" /></Section></Sections></Member>
+    <Member Name="statusMotorVFD" Datatype="&quot;typeMotorVFDStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="driveStopped" Datatype="Bool" /><Member Name="driveRunning" Datatype="Bool" /><Member Name="driveFault" Datatype="Bool" /><Member Name="driveWarning" Datatype="Bool" /><Member Name="driveRunEnabled" Datatype="Bool" /><Member Name="driveInLocalControl" Datatype="Bool" /><Member Name="driveInExt2Control" Datatype="Bool" /><Member Name="driveActualSpeed" Datatype="Real" /><Member Name="driveActualTorque" Datatype="Real" /><Member Name="driveStatusWord" Datatype="Word" /></Section></Sections></Member>
+    <Member Name="statusWaterCoolerUnit" Datatype="&quot;typeWaterCoolerStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="supplyWaterCoolFault" Datatype="Bool" /><Member Name="supplyWaterCoolerContactor" Datatype="Bool" /><Member Name="tankLevelLow" Datatype="Bool" /><Member Name="tankLevelLowLow" Datatype="Bool" /><Member Name="flowWaterPumps" Datatype="Bool" /><Member Name="coolingMotorTempFault" Datatype="Bool" /><Member Name="flowCoolerOK" Datatype="Bool" /><Member Name="tempControlCoolingLiquid" Datatype="Bool" /><Member Name="contactorFailed" Datatype="Bool" /></Section></Sections></Member>
+    <Member Name="statusWinchDrum" Datatype="&quot;typeWinchDrumStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="payout" Datatype="Real" /><Member Name="payoutScaled" Datatype="DInt" /><Member Name="payoutAboveLimit" Datatype="Bool" /><Member Name="payoutAtMaximum" Datatype="Bool" /><Member Name="load" Datatype="Real" /></Section></Sections></Member>
+  </Section>
+</Sections></Interface>
+      <IsFailsafeCompliant>false</IsFailsafeCompliant>
+      <Name>typeEquipStatus</Name>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="3" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

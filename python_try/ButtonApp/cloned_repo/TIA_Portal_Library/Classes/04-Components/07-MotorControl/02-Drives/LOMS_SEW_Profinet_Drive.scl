@@ -1,0 +1,184 @@
+﻿TYPE "typeDriveControl"
+VERSION : 0.1
+   STRUCT
+      xDriveEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveRun { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveEmergencyStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      iDriveSpeedRef_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeDriveStatus"
+VERSION : 0.1
+   STRUCT
+      xDriveRunning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveFaultStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      xDriveWarning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveWarningStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      iDriveActualSpeed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typePI4_In"
+VERSION : 0.1
+   STRUCT
+      PI1_SW { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // Status Word
+         i_xBit8 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Bits 8-15 Inverter status if bit 5 = 0
+         i_xBit9 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0x01 = STO safe Torque Off active
+         i_xBit10 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0x02 = No enable
+         i_xBit11 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0x05 = Speed control
+         i_xBit12 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0x06 = Torque control
+         i_xBit13 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0x0A = Technology function
+         i_xBit14 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0x0C = Reference travel
+         i_xBit15 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_xBit0_Enabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0:locked, 1: enabled
+         i_xBit1_Ready { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0: not ready, 1: ready
+         i_xBit2_DataEnabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 1 if P1-12 = 5
+         i_xBit3_Reserved { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_xBit4_Reserved { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         "i_xBit5_Fault/Warning" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_xBit6_PosLimitSwActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0: locked, 1: enabled
+         i_xBit7_NegLimitSwActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // 0: locked, 1: enabled
+      END_STRUCT;
+      i_iPI2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Actual Speed by default, configurable P5-12
+      i_iPI3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Actual Current by default, configurable P5-13
+      i_iPI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Configurable P5-14
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typePO4_Out"
+VERSION : 0.1
+   STRUCT
+      PO1_CW { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // Control Word
+         q_xReserved8 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved9 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved10 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved11 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved12 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved13 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved14 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved15 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xOFF1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Inhibit
+         q_xOFF2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Rapid stop
+         q_xOFF3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Ramp stop
+         q_xReserved3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved5 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_xReserved7 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+      q_iPO2_speedRef { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Configurable, Speed Reference by default, P5-09
+      q_iPO3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Configurable, P5-10
+      q_iPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Configurable, P5-11
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_SEW_Profinet_Drive"
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      driveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";
+      inPI4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePI4_In";
+   END_VAR
+
+   VAR_OUTPUT 
+      outPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePO4_Out";
+      driveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";
+   END_VAR
+
+   VAR 
+      statPZD_ReadError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_WriteError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_Out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePO4_Out";
+      statPZD_In { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePI4_In";
+   END_VAR
+
+   VAR CONSTANT
+      DRIVE_SPEED_REF_MULTIPLIER { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := 200;
+   END_VAR
+
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            SEW Mofidrive VFD PO4 Control Function
+	  // Comment/Function: Library Function 
+	  // Parental class:   classDrive           
+	  // Library/Family:   LOMS
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-14 | Yuriy Mosiyenko        | Created
+	  // Last update | 2024-08-23 | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+     //Update comments:
+     //-------------------------------------------------------------------------------
+     //2024-08-23: Removed block enable code
+     //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+
+	  REGION DESCRIPTION
+	(/*
+	
+	*/)
+	  END_REGION DESCRIPTION
+	  
+	  
+	  REGION INITIALISATION
+	    
+	    #statPZD_In := #inPI4;
+	    
+	    #statPZD_Out.PO1_CW.q_xOFF2 := TRUE;
+	    #statPZD_Out.PO1_CW.q_xOFF3 := TRUE;
+	    
+	    
+	    //read status word
+	    #driveStatus.xDriveRunning := #statPZD_In.PI1_SW.i_xBit0_Enabled;
+	    #driveStatus.xDriveFault := #statPZD_In.PI1_SW."i_xBit5_Fault/Warning";
+	    
+	    #driveStatus.iDriveActualSpeed := #statPZD_In.i_iPI2;
+	    
+	
+	    
+	    
+	  END_REGION INITIALISATION  
+	  
+	  REGION PROGRAM LOGIC
+	    //if Drive Ready already we can run the drive
+	    IF #statPZD_In.PI1_SW.i_xBit1_Ready THEN
+	      //if drive run command received set the CW bit 3
+	      #statPZD_Out.PO1_CW.q_xOFF1 := #driveControl.xDriveRun;
+	    ELSE
+	      #statPZD_Out.PO1_CW.q_xOFF1 := FALSE;
+	    END_IF;
+	    //if reset command received set CW bit 11
+	    #statPZD_Out.PO1_CW.q_xFaultReset := #driveControl.xDriveFaultReset;
+	    
+	    //speed reference
+	    #statPZD_Out.q_iPO2_speedRef := REAL_TO_INT(#driveControl.iDriveSpeedRef_percent) * #DRIVE_SPEED_REF_MULTIPLIER;
+	  END_REGION PROGRAM LOGIC
+	  
+	  REGION OUTPUTS
+	    //write PPO4 telegram to the drive
+	    
+	    #outPO4 := #statPZD_Out;
+	    
+	  END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

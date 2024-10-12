@@ -1,0 +1,131 @@
+﻿TYPE "typeAnalogLevelSensor"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         i_xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_iCurrentInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         i_iMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         i_iMinInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         q_xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // bit0-overflow; bit1-input range; bit2-output range; bit3-underflow
+         q_rLevel { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "classLevelSensor"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+VERSION : 0.1
+   VAR_IN_OUT 
+      io_AnalogLevelSensor : "typeAnalogLevelSensor";
+   END_VAR
+
+   VAR 
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statAnalogInNormalized { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statLevel_percent { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_VAR
+   VAR RETAIN
+      statMinInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor reading at zero percent level
+      statMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor reading at 100 percent level
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            Analog Level Sensor Control
+	  // Comment/Function: Reading analog level sensor and scale the output
+	  //                   in percent. 
+	  //                   Interesting enough I decided to make this class from
+	  //                   the classPressureTransmitter, because the logic is the same, 
+	  //				   and I don't want to use calibration here. Although I have
+	  //                   LOMS_AnalogLevelSensorControl, I decided to make this class
+	  //			       to simplify the usage of the analog level sensor in the project.
+	  // Parental class:  LOMS - Types - classPressureTransmitter
+	  // Library/Family:   LOMS - Types -
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-27 | Yuriy Mosiyenko        | Created
+	  // Last update |            | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-08-27: Created the class
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	IF #io_AnalogLevelSensor.commands.i_xEnable THEN
+	  REGION INIT
+	    //check for overflow
+	    #statAnalogIn := #io_AnalogLevelSensor.commands.i_iCurrentInputValue;
+	    IF #statAnalogIn > #io_AnalogLevelSensor.commands.i_iMaxInputValue THEN
+	      #io_AnalogLevelSensor.status.q_xError := TRUE;
+	      #statAnalogIn := #io_AnalogLevelSensor.commands.i_iMaxInputValue;
+	      #io_AnalogLevelSensor.status.q_wAlarmWord0.%X0 := TRUE;
+	    ELSE
+	      #io_AnalogLevelSensor.status.q_xError := FALSE;
+	      #io_AnalogLevelSensor.status.q_wAlarmWord0 := 0;
+	    END_IF;
+	    //check for input range
+	    IF #io_AnalogLevelSensor.commands.i_iMinInputValue > #io_AnalogLevelSensor.commands.i_iMaxInputValue THEN
+	      #io_AnalogLevelSensor.status.q_xError := TRUE;
+	      #io_AnalogLevelSensor.status.q_wAlarmWord0.%X1 := TRUE;
+	    END_IF;
+	    //check for underflow
+	    IF #statAnalogIn < #io_AnalogLevelSensor.commands.i_iMinInputValue THEN
+	      #io_AnalogLevelSensor.status.q_xError := TRUE;
+	      #statAnalogIn := #io_AnalogLevelSensor.commands.i_iMinInputValue;
+	      #io_AnalogLevelSensor.status.q_wAlarmWord0.%x2 := TRUE;
+	    END_IF;
+	    
+	    #statMinInputValue := #io_AnalogLevelSensor.commands.i_iMinInputValue;
+	    #statMaxInputValue := #io_AnalogLevelSensor.commands.i_iMaxInputValue;
+	    
+	  END_REGION INIT
+	  
+	  
+	  REGION PROCESS
+	    REGION CALIBRATION
+	      //in the current revision we are not using calibration points, just
+	      //set input and output ranges
+	      ;
+	    END_REGION CALIBRATION
+	    REGION SCALING
+	      //Normalize the input value
+	      #statAnalogInNormalized := INT_TO_REAL((#statAnalogIn - #statMinInputValue)) / INT_TO_REAL((#statMaxInputValue - #statMinInputValue));
+	      //Scale the normalized value to the output range
+	      #statLevel_percent := 100.0 * #statAnalogInNormalized;
+	    END_REGION SCALING    
+	  END_REGION PROCESS
+	  
+	  REGION OUTPUTS
+	    // Write outputs
+	    #io_AnalogLevelSensor.status.q_rLevel := #statLevel_percent;
+	  END_REGION OUTPUTS
+	END_IF;
+END_FUNCTION_BLOCK
+

@@ -1,0 +1,112 @@
+﻿TYPE "typeTMcount2Encoder"
+VERSION : 0.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xResetCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         dResetCounterValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         dCount { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+         xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      END_STRUCT;
+      inputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware inputs to the block
+         i_dCounterValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      END_STRUCT;
+      outputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware outputs from the block
+         tmCount2LoadValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+         tmCount2ControlByte8 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+         tmCount2ControlByte9 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+         tmCount2ControlByte10 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_TM_Count2_Encoder_FB"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_IN_OUT 
+      encoder : "typeTMcount2Encoder";
+   END_VAR
+
+   VAR 
+      statCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+   END_VAR
+
+   VAR CONSTANT 
+      LOAD_COUNTER_VALUE_BYTE8 : Byte := 16#01;
+      NO_ACTION_BYTE8 : Byte := 16#00;
+      SW_GATE_ENABLE_BYTE9 : Byte := 16#01;
+      SET_FWD_DIR_BYTE10 : Byte := 16#00;
+      SET_REV_DIR_BYTE10 : Byte := 16#80;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            TM Count 2x24V encoder module FB
+	  // Comment/Function: Reading incremental encoder with TM Count2 module without
+	  //                   using a technology module, and with simulation functionality
+	  //                   
+	  // Library/Family:   LOMS - Types -
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-12-27 | Yuriy Mosiyenko        | First released version
+	  // 00.01.00 | 2024-04-30 | Yuriy Mosiyenko        | Input/Output type created and
+	  //                                                | used instead of individual variables
+	  //                                                | Removed alarm codes, added bits instead
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	IF #encoder.commands.xEnable THEN
+	  REGION INITIALISATION  
+	    
+	    #encoder.outputs.tmCount2ControlByte9 := #SW_GATE_ENABLE_BYTE9;
+	    
+	    REGION RESET COUNTER
+	      IF #encoder.commands.xResetCounter THEN
+	        #encoder.outputs.tmCount2LoadValue := #encoder.commands.dResetCounterValue;
+	        #encoder.outputs.tmCount2ControlByte8 := #LOAD_COUNTER_VALUE_BYTE8;
+	      ELSE
+	        #encoder.outputs.tmCount2ControlByte8 := #NO_ACTION_BYTE8;
+	      END_IF;
+	      #statCounter := #encoder.inputs.i_dCounterValue;
+	    END_REGION RESET COUNTER
+	    
+	  END_REGION INITIALISATION  
+	  
+	  REGION PROGRAM LOGIC
+	
+	    
+	  END_REGION PROGRAM LOGIC
+	  
+	  REGION OUTPUTS
+	
+	    #encoder.status.dCount := #statCounter;
+	
+	  END_REGION OUTPUTS
+	END_IF;
+END_FUNCTION_BLOCK
+

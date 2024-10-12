@@ -1,0 +1,149 @@
+﻿TYPE "typeWeightControllerConfig"
+VERSION : 0.1
+   STRUCT
+      CalibrationPoint2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := false;   // Calibration at second point is active
+      CalibrationPoint1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := false;   // Calibration at first point is active
+      calibrationWeight2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real := 1000.0;   // Known weight at point 2
+      calibrationWeight1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real := 0.0;   // known weight at point 1
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_AnalogWeightController"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_INPUT 
+      enable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // block enable input
+      simEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // enable simulation mode
+      analog { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // weight controller input from analog input card
+      simAnalog { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // simulated input signal
+      config { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeWeightControllerConfig";   // configuration data
+   END_VAR
+
+   VAR_OUTPUT 
+      error { ExternalWritable := 'False'} : Bool;   // TRUE: An error occurred during the execution of the FB
+      status { ExternalWritable := 'False'} : Word := #STATUS_NO_CALL;   // 16#0000 - 16#7FFF: Status of the FB, 16#8000 - 16#FFFF: Error identification
+      out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // weight output in lbs
+   END_VAR
+
+   VAR 
+      statStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word := #STATUS_NO_CALL;   // Static value for output 'status'
+      statFBState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt := #FB_STATE_NO_PROCESSING;   // State in the state machine of the FB
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statCalibWeightRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // difference between weight in Calibration points in Lbs
+      statCalibReadingsRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // difference between analog card readings in Calibration points
+      statPointsPerLbs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // calculated number of input points per each pound of weight
+      statWeightLbs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // calibrated weight in Lbs
+   END_VAR
+   VAR RETAIN
+      statReadingsAtCal1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor readings at calibration point1
+      statReadingsAtCal2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor readings at calibration point2
+      statWeightAtCal1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // known weight at Calibration point 1
+      statWeightAtCal2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // known weight at Calibration point 2
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : DInt := 0;   // FB state: No processing
+      FB_STATE_ENABLING : DInt := 10;   // FB state: Enabling
+      FB_STATE_PROCESSING : DInt := 50;   // FB state: Processing
+      FB_STATE_DISABLING : DInt := 90;   // FB state: Disabling
+      STATUS_NO_CALL : Word := 16#7000;   // No job being currently processed
+      STATUS_FIRST_CALL : Word := 16#7001;   // First call after incoming new job (rising edge 'enable')
+      STATUS_SUBSEQUENT_CALL : Word := 16#7002;   // Subsequent call during active processing without further details
+      ERR_UNDEFINED_STATE : Word := 16#8600;   // Error: due to an undefined state in state machine
+      ERR_IN_BLOCK_OPERATION : Word := 16#8001;   // Error: Wrong operation of the function block
+      ERR_PARAMETRIZATION : Word := 16#8200;   // Error: during parameterization
+      ERR_WRONG_CONFIG : Word := 16#8201;   // Error: wrong configuration input parameters
+      ERR_PROCESSING_EXTERN : Word := 16#8400;   // Error: when processing from outside (e. g. wrong I/O signals, axis not referenced)
+      ERR_ANALOG_SIGNAL_OVERFLOW : Word := 16#8401;   // Error: analog signal value exceeds set limits
+      ERR_ANALOG_SIGNAL_UNDERFLOW : Word := 16#8402;   // Error: analog signal value below set limits
+      ERR_PROCESSING_INTERN : Word := 16#8600;   // Error: when processing internally (e. g. when calling a system function)
+      ERR_AREA_RESERVED : Word := 16#8800;   // Error: Reserved area
+      ERR_USER_DEFINED_CLASSES : Word := 16#9000;   // Error: User-defined error classes
+      ANALOG_INPUT_MAX_VALUE : Int := 27648;   // Maximum value for valid input from analog card
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            Analog Weight Controller
+	  // Comment/Function: reading analog weight controller analog data and scale it
+	  //                   based on calibration
+	  //                   
+	  // Library/Family:   LOMS - Types - LOMS - 12 Analog Sensors - Weight Sensors
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-11-27 | Yuriy Mosiyenko        | First created
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	  Rev.2. Added calibration procesure inside the FB. Instead of providing the calibration points from inputs, enable point 1 and point 2
+	  calibration from inputs, and read calibration points in the FB. 
+	  Rev.1. Configuration parameters for the block are required. They are two pairs of calibration data: analog card reading and known weight at this point.
+	  Based on this data the linear scale is being calculated and applied to the analog input reading to find out the weight of the product. 
+	  ANALOG_INPUT_MAX_VALUE can be changed to adapt to different input cards. 
+	*/)
+	END_REGION DESCRIPTION
+	IF #enable THEN
+	  REGION INIT
+	    #statAnalogIn := #analog;
+	    IF #statAnalogIn > #ANALOG_INPUT_MAX_VALUE THEN
+	      #error := TRUE;
+	      #statAnalogIn := #ANALOG_INPUT_MAX_VALUE;
+	      #status := #ERR_ANALOG_SIGNAL_OVERFLOW;
+	    ELSE
+	      #error := FALSE;
+	      #status := #STATUS_SUBSEQUENT_CALL;
+	    END_IF;
+	  END_REGION INIT
+	  
+	  
+	  REGION Process
+	    REGION CALIBRATION
+	      IF #config.CalibrationPoint1 THEN
+	        #statWeightAtCal1 := #config.calibrationWeight1;
+	        #statReadingsAtCal1 := #statAnalogIn;
+	      END_IF;
+	      IF #config.CalibrationPoint2 THEN
+	        #statWeightAtCal2 := #config.calibrationWeight2;
+	        #statReadingsAtCal2 := #statAnalogIn;
+	      END_IF;
+	    END_REGION CALIBRATION
+	    
+	    REGION SCALING
+	      
+	      #statCalibReadingsRange := #statReadingsAtCal2 - #statReadingsAtCal1;
+	      #statCalibWeightRange := #statWeightAtCal2 - #statWeightAtCal1;
+	      #statPointsPerLbs := #statCalibReadingsRange / #statCalibWeightRange;
+	    END_REGION SCALING
+	    
+	    REGION WEIGHT CALC
+	      #statWeightLbs := #statAnalogIn / #statPointsPerLbs;
+	    END_REGION WEIGHT CALC
+	    
+	    
+	  END_REGION Process
+	  
+	  REGION OUTPUTS
+	    // Write outputs
+	    #out := #statWeightLbs;
+	  END_REGION OUTPUTS
+	END_IF;
+	
+END_FUNCTION_BLOCK
+

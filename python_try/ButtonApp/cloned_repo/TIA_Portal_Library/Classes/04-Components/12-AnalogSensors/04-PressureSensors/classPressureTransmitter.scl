@@ -1,0 +1,136 @@
+﻿TYPE "typePressureTransmitter"
+VERSION : 0.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         i_xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         i_iCurrentInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         i_iMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         i_iMinInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+         i_rMaxPressurePsi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+         i_rMinPressurePsi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         q_xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         q_wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // bit0-overflow; bit1-input range; bit2-output range; bit3-underflow
+         q_rPressurePsi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "classPressureTransmitter"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+VERSION : 0.1
+   VAR_IN_OUT 
+      pressureTransmitter : "typePressureTransmitter";
+   END_VAR
+
+   VAR 
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statAnalogInNormalized { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statPressurePsi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+   END_VAR
+   VAR RETAIN
+      statMinPressurePsi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // known level at point 1
+      statMaxPressurePsi { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // known level at point 2
+      statMinInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor reading at calibration point 1
+      statMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor reading at calibration point 2
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            Analog Pressure Transmitter Control
+	  // Comment/Function: Reading analog level sensor and scale the output
+	  //                   based on the calibration configuration
+	  // Parental class:  LOMS - Types - Loms_AnalogLevelSensorControl
+	  // Library/Family:   LOMS - Types -
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-08-26 | Yuriy Mosiyenko        | Created
+	  // Last update | 2024-08-27 | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+	  //Update comments:
+	  //-------------------------------------------------------------------------------
+	  //2024-08-27: Corrected mistakes in TIA Portal
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	IF #pressureTransmitter.commands.i_xEnable THEN
+	  REGION INIT
+	    //check for overflow
+	    #statAnalogIn := #pressureTransmitter.commands.i_iCurrentInputValue;
+	    IF #statAnalogIn > #pressureTransmitter.commands.i_iMaxInputValue THEN
+	      #pressureTransmitter.status.q_xError := TRUE;
+	      #statAnalogIn := #pressureTransmitter.commands.i_iMaxInputValue;
+	      #pressureTransmitter.status.q_wAlarmWord0.%X0 := TRUE;
+	    ELSE
+	      #pressureTransmitter.status.q_xError := FALSE;
+	      #pressureTransmitter.status.q_wAlarmWord0 := 0;
+	    END_IF;
+	    //check for input range
+	    IF #pressureTransmitter.commands.i_iMinInputValue > #pressureTransmitter.commands.i_iMaxInputValue THEN
+	      #pressureTransmitter.status.q_xError := TRUE;
+	      #pressureTransmitter.status.q_wAlarmWord0.%X1 := TRUE;
+	    END_IF;
+	    //check for output range
+	    IF #pressureTransmitter.commands.i_rMinPressurePsi > #pressureTransmitter.commands.i_rMaxPressurePsi THEN
+	      #pressureTransmitter.status.q_xError := TRUE;
+	      #pressureTransmitter.status.q_wAlarmWord0.%X2 := TRUE;
+	    END_IF;
+	    //check for underflow
+	    IF #statAnalogIn < #pressureTransmitter.commands.i_iMinInputValue THEN
+	      #pressureTransmitter.status.q_xError := TRUE;
+	      #statAnalogIn := #pressureTransmitter.commands.i_iMinInputValue;
+	      #pressureTransmitter.status.q_wAlarmWord0.%X3 := TRUE;
+	    END_IF;
+	    
+	    #statMinInputValue := #pressureTransmitter.commands.i_iMinInputValue;
+	    #statMaxInputValue := #pressureTransmitter.commands.i_iMaxInputValue;
+	    #statMinPressurePsi := #pressureTransmitter.commands.i_rMinPressurePsi;
+	    #statMaxPressurePsi := #pressureTransmitter.commands.i_rMaxPressurePsi;
+	    
+	  END_REGION INIT
+	  
+	  
+	  REGION PROCESS
+	    REGION CALIBRATION
+	      //in the current revision we are not using calibration points, just
+	      //set input and output ranges
+	      ;
+	    END_REGION CALIBRATION
+	    REGION SCALING
+	      //Normalize the input value
+	      #statAnalogInNormalized := INT_TO_REAL((#statAnalogIn - #statMinInputValue)) / INT_TO_REAL((#statMaxInputValue - #statMinInputValue));
+	      //Scale the normalized value to the output range
+	      #statPressurePsi := #statMinPressurePsi + (#statMaxPressurePsi - #statMinPressurePsi) * #statAnalogInNormalized;
+	    END_REGION SCALING    
+	  END_REGION PROCESS
+	  
+	  REGION OUTPUTS
+	    // Write outputs
+	    #pressureTransmitter.status.q_rPressurePsi := #statPressurePsi;
+	  END_REGION OUTPUTS
+	END_IF;
+END_FUNCTION_BLOCK
+

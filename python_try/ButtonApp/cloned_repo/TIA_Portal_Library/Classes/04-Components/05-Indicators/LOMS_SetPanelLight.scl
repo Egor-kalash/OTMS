@@ -1,0 +1,111 @@
+﻿FUNCTION_BLOCK "LOMS_SetPanelLight"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_INPUT 
+      steady : Bool;   // enable steady on out (priority over blinking inputs)
+      blinking1Hz : Bool;   // enable blinking 1 Hz out (the least priority)
+      blinking2Hz : Bool;   // enable blinking 2 Hz out (priority over 1 Hz input)
+      test : Bool;   // enable test light (priority over all other inputs)
+   END_VAR
+
+   VAR_OUTPUT 
+      lightOut { ExternalWritable := 'False'} : Bool;   // light out
+   END_VAR
+
+   VAR 
+      stat1Hz : Bool;
+      stat1HzLow : Bool;
+      stat1HzHigh : Bool;
+      stat2Hz : Bool;
+      stat2HzLow : Bool;
+      inst1hzTimer {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;
+      inst2hzTimer {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;
+      statLight { S7_SetPoint := 'True'} : Bool;
+      inst1hzLowTimer {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;
+      inst2hzLowTimer {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;
+   END_VAR
+
+   VAR CONSTANT 
+      TIMER_FOR_1HZ : Time := t#1S;
+      TIMER_FOR_2HZ : Time := T#500Ms;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            LOMS_SetPanelLight
+	  // Comment/Function: Standard block to control the panel light with the next functions:
+	  //                   - steady
+	  //                   - blinking1Hz
+	  //                   - blinking2Hz
+	  //                   - test
+	  //                   
+	  // Library/Family:   LOMS - Types - 05 Indicators
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-18 | Yuriy Mosiyenko        | First released version
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION  
+	
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  #inst1hzTimer(IN := (#blinking1Hz AND NOT #stat1HzLow),
+	                PT := #TIMER_FOR_1HZ,
+	                Q => #stat1Hz);
+	  
+	  #inst1hzLowTimer(IN:=#stat1Hz,
+	                   PT:=#TIMER_FOR_1HZ,
+	                   Q => #stat1HzLow);
+	
+	  
+	  #inst2hzTimer(IN := #blinking2Hz AND NOT #stat2HzLow,
+	                PT := #TIMER_FOR_2HZ,
+	                Q => #stat2Hz);
+	  #inst2hzLowTimer(IN := #stat2Hz,
+	                   PT := #TIMER_FOR_2HZ,
+	                   Q => #stat2HzLow);
+	  
+	  IF #test THEN
+	    #statLight := TRUE;
+	  ELSIF #steady THEN
+	    #statLight := #steady;
+	  ELSIF #blinking2Hz THEN
+	    #statLight := #stat2Hz;
+	  ELSIF #blinking1Hz THEN
+	    #statLight := #stat1Hz;
+	  ELSE
+	    #statLight := FALSE;
+	  END_IF;
+	  
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  #lightOut := #statLight;
+	  ENO := TRUE;
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

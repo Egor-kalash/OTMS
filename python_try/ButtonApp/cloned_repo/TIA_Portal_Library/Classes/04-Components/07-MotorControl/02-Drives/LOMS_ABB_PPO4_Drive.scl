@@ -1,0 +1,197 @@
+﻿TYPE "typeDriveControl"
+VERSION : 0.0.1
+   STRUCT
+      xDriveEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveRun { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveEmergencyStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      iDriveSpeedRef { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeDriveStatus"
+VERSION : 0.1
+   STRUCT
+      xDriveRunning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      xDriveFault { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveFaultStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      xDriveWarning { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      wDriveWarningStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      iDriveActualSpeed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typePPO4_In"
+VERSION : 0.1
+   STRUCT
+      SW { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct
+         AT_SET_POINT { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         REMONTE { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         ABOVE_LIMIT { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         EXT_CTRL_LOC { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         EXT_RUN_ENABLE { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         MSV13 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         MSV14 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         COOM_FAULT { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RDY_ON { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RDY_RUN { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RDY_REF { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         TRIPPED { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         OFF2_STATE { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         OFF3_STATE { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         ON_INHIB { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         ALARM { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+      actualSpeed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      PZD_In3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      PZD_In4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      PZD_In5 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      PZD_In6 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typePPO4_Out"
+VERSION : 0.1
+   STRUCT
+      CW { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct
+         INCHING_1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         INCHING_2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         REMONTE_CMD { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         EXT_CTRL_LOC { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RESERVE_2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RESERVE_3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RESERVE_4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RESERVE_5 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         OFF1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         OFF2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         OFF3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         INHIBIT_OPREATION { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RAMP_OUT_ZERO { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RAMP_HOLD { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RAMP_IN_ZERO { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         RESET { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+      speedRef { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      PZD_Out3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      PZD_Out4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      PZD_Out5 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      PZD_Out6 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_ABB_PPO4_Drive"
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 0.0.3
+   VAR_INPUT 
+      driveControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveControl";
+      inPPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePPO4_In";
+   END_VAR
+
+   VAR_OUTPUT 
+      outPPO4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typePPO4_Out";
+      driveStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeDriveStatus";
+   END_VAR
+
+   VAR 
+      statPZD_ReadError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_WriteError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPZD_Out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePPO4_Out";
+      statPZD_In { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "typePPO4_In";
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            VFD PPO4 Control Function
+	  // Comment/Function: Library Function 
+	  //                   
+	  //                   
+	  //                   
+	  //                   
+	  //                   
+	  // Library/Family:   LOMS - Master
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  //             | Date       | Expert in charge       | Changes applied
+	  //-------------|------------|------------------------|------------------------------
+	  // Created     | 2024-02-01 | Yuriy Mosiyenko        | Created
+	  // Last update | 2024-08-23 | Yuriy Mosiyenko        | Corrections
+	  //===============================================================================
+     //Update comments:
+     //2024-08-23: Changed header to the new format, removed block enable code
+     //
+     //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+
+	  REGION DESCRIPTION
+	(/*
+	
+	*/)
+	  END_REGION DESCRIPTION
+	  
+	  
+	  REGION INITIALISATION
+	    
+	    #statPZD_In := #inPPO4;
+	    
+	    #statPZD_Out.CW.RAMP_IN_ZERO := TRUE;
+	    #statPZD_Out.CW.RAMP_OUT_ZERO := TRUE;
+	    #statPZD_Out.CW.RAMP_HOLD := TRUE;
+	    #statPZD_Out.CW.OFF2 := TRUE;
+	    #statPZD_Out.CW.EXT_CTRL_LOC := FALSE;
+	    #statPZD_Out.CW.REMONTE_CMD := TRUE;
+	    #statPZD_Out.CW.OFF3 := TRUE;
+	    
+	    
+	    //read status word
+	    #driveStatus.xDriveRunning := #statPZD_In.SW.RDY_REF;
+	    #driveStatus.xDriveFault := #statPZD_In.SW.TRIPPED;
+	    #driveStatus.xDriveWarning := #statPZD_In.SW.ALARM;
+	    
+	    #driveStatus.iDriveActualSpeed := #statPZD_In.actualSpeed;
+	    
+	
+	    
+	    
+	  END_REGION INITIALISATION  
+	  
+	  REGION PROGRAM LOGIC
+	    //if Drive Ready already received and CW.bit0 set, we can run the drive
+	    IF #statPZD_Out.CW.OFF1 THEN
+	      //if drive run command received set the CW bit 3
+	      #statPZD_Out.CW.INHIBIT_OPREATION := #driveControl.xDriveRun;
+	    ELSE
+	      #statPZD_Out.CW.INHIBIT_OPREATION := FALSE;
+	    END_IF;
+	    //if reset command received set CW bit 11
+	    #statPZD_Out.CW.RESET := #driveControl.xDriveFaultReset;
+	    
+	    //speed reference
+	    #statPZD_Out.speedRef := #driveControl.iDriveSpeedRef;
+	  END_REGION PROGRAM LOGIC
+	  
+	  REGION OUTPUTS
+	    //write PPO4 telegram to the drive
+	    
+	    //initiate the drive if it is ready
+	    #statPZD_Out.CW.OFF1 := #statPZD_In.SW.RDY_ON;
+	    
+	    //#statPZD_WriteError := DPWR_DAT(LADDR := #driveControl.hwDrivePPOaddress, RECORD := #statPZD_Out);
+	    #outPPO4 := #statPZD_Out;
+	    
+	  END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

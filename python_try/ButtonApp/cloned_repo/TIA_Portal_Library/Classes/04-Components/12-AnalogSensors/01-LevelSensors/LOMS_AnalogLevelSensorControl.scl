@@ -1,0 +1,130 @@
+﻿TYPE "typeAnalogLevelSensor"
+VERSION : 0.1
+   STRUCT
+      commands { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical inputs to the block
+         xEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xFaultReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         rZeroMeasuringValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+         xCalibrationPoint2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         xCalibrationPoint1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         "rCalibrationLevel2_%" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+         "rCalibrationLevel1_%" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+         iMaxInputValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // logical outputs from the block
+         xError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+         wAlarmWord0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // bit0-overflow; 
+         "rLevel_%" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      END_STRUCT;
+      inputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware inputs to the block
+         i_dAnalogIN { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      END_STRUCT;
+      outputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // hardware outputs from the block
+         q_xSpare { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_AnalogLevelSensorControl"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_IN_OUT 
+      levelSensor : "typeAnalogLevelSensor";
+   END_VAR
+
+   VAR 
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statCalibLevelRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // difference between level in Calibration points in %
+      statCalibReadingsRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // difference between analog card readings in Calibration points
+      "statPointsPer%" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // calculated number of input points per each % of level
+      "statLevel%" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // calibrated level in %
+   END_VAR
+   VAR RETAIN
+      "statCalibrationLevel1%" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // known level at point 1
+      "statCalibrationLevel2%" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // known level at point 2
+      statCalibrationReading1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor reading at calibration point 1
+      statCalibrationReading2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // sensor reading at calibration point 2
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            Analog Level Sensor Control
+	  // Comment/Function: Reading analog level sensor and scale the output
+	  //                   based on the calibration configuration
+	  // Library/Family:   LOMS - Types -
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-12-01 | Yuriy Mosiyenko        | First released version
+	  // 00.01.00 | 2024-04-30 | Yuriy Mosiyenko        | Discrete input/output vars
+	  //                                                | replaced with library type, 
+	  //                                                | simulation removed
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	IF #levelSensor.commands.xEnable THEN
+	  REGION INIT
+	    #statAnalogIn := #levelSensor.inputs.i_dAnalogIN;
+	    IF #statAnalogIn > #levelSensor.commands.iMaxInputValue THEN
+	      #levelSensor.status.xError := TRUE;
+	      #statAnalogIn := #levelSensor.commands.iMaxInputValue;
+	      #levelSensor.status.wAlarmWord0.%X0 := TRUE;
+	    ELSE
+	      #levelSensor.status.xError := FALSE;
+	      #levelSensor.status.wAlarmWord0 := 0;
+	    END_IF;
+	    
+	  END_REGION INIT
+	  
+	  
+	  REGION PROCESS
+	    REGION CALIBRATION
+	      IF #levelSensor.commands.xCalibrationPoint1 THEN
+	        #"statCalibrationLevel1%" := #levelSensor.commands."rCalibrationLevel1_%";
+	        #statCalibrationReading1 := #statAnalogIn;
+	      END_IF;
+	      IF #levelSensor.commands.xCalibrationPoint2 THEN
+	        #"statCalibrationLevel2%" := #levelSensor.commands."rCalibrationLevel2_%";
+	        #statCalibrationReading2 := #statAnalogIn;
+	      END_IF;
+	    END_REGION CALIBRATION
+	    REGION SCALING
+	      #statCalibReadingsRange := #statCalibrationReading2 - #statCalibrationReading1;
+	      #statCalibLevelRange := #"statCalibrationLevel2%" - #"statCalibrationLevel1%";
+	      #"statPointsPer%" := (#statCalibReadingsRange / #statCalibLevelRange);
+	    END_REGION SCALING
+	    
+	    REGION LEVEL CALC
+	      #"statLevel%" := (#statAnalogIn-#statCalibrationReading1) / #"statPointsPer%";
+	    END_REGION LEVEL CALC
+	    
+	    
+	  END_REGION PROCESS
+	  
+	  REGION OUTPUTS
+	    // Write outputs
+	    #levelSensor.status."rLevel_%" := #"statLevel%";
+	  END_REGION OUTPUTS
+	END_IF;
+END_FUNCTION_BLOCK
+

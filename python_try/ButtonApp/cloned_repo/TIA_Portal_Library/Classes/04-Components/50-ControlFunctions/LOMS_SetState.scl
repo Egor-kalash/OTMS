@@ -1,0 +1,126 @@
+﻿TYPE "typeMachineState"
+VERSION : 0.1
+   STRUCT
+      maintenance : Bool;   // maintenance mode, may be used for testing purposes
+      startup : Bool;   // starting up state
+      run : Bool;   // running state
+      stop : Bool;   // stopped state
+      stopping { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // stopping state, may be used if the system should do some steps to stop the plan properly
+      eStop : Bool;   // emergency stop state
+      fault : Bool;   // fault
+      stateWord : Word;   // 0 - maintenance, 1 - eStop, 2 - stopped, 3 - stopping, 4 - fault, 5 - startup, 6 - run
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_SetState"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_INPUT 
+      enable : Bool;
+      maintenanceCmd { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      startupCmd { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      runCmd : Bool;
+      stopCmd : Bool;
+      eStopCmd : Bool;
+      failure : Bool;
+   END_VAR
+
+   VAR_IN_OUT 
+      state : "typeMachineState";
+   END_VAR
+
+   VAR 
+      statState { S7_SetPoint := 'False'} : "typeMachineState";
+   END_VAR
+
+   VAR CONSTANT 
+      MAINTENANCE_STATE : Word := 16#0000;
+      E_STOP_STATE : Word := 16#0001;
+      STOP_STATE : Word := 16#0002;
+      FAULT_STATE : Word := 16#0003;
+      RUN_STATE : Word := 16#0004;
+      STARTUP_STATE : Word := 16#0005;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Otomakeit Solutions / 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            SetState
+	  // Comment/Function: This FB sets the Output of data type typeMachineState
+	  //                   based on next inputs:
+	  //                   - maintenance
+	  //                   - startup
+	  //                   - run
+	  //                   - stop
+	  //                   - e-stop
+	  //                   - fault
+	  //                   
+	  // Library/Family:   LOMS - Types -
+	  // Author:           the Product/Industrial Control Design/Yuriy Mosiyenko
+	  // Tested with:      1214C, v4.5
+	  // Engineering:      TIA V17
+	  // Restrictions:     
+	  // Requirements:     
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 00.00.01 | 2023-05-18 | Yuriy Mosiyenko        | First released version
+	  // 00.00.02 | 2023-05-18 | Yuriy Mosiyenko        | Startup Machine State added
+	  // 00.00.03 | 2023-06-26 | Yuriy Mosiyenko        | Added Maintenance state of the machine
+	  //                                                | for testing routines
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	
+	REGION INITIALISATION  
+	
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  //only one state should be set. If no state command is defined, set the maintenance state status word  
+	  
+	  #statState.eStop := #eStopCmd;
+	  #statState.maintenance := #enable AND #maintenanceCmd AND NOT #eStopCmd;
+	  #statState.stop := #enable AND #stopCmd AND NOT #eStopCmd AND NOT #maintenanceCmd;
+	  #statState.fault := #enable AND #failure AND NOT #stopCmd AND NOT #eStopCmd AND NOT #maintenanceCmd;
+	  #statState.run := #enable AND #runCmd AND NOT #stopCmd AND NOT #failure AND NOT #eStopCmd AND NOT #maintenanceCmd;
+	  #statState.startup := #enable AND #startupCmd AND NOT #runCmd AND NOT #stopCmd AND NOT #failure AND NOT #eStopCmd
+	  AND NOT #maintenanceCmd;
+	  
+	  IF #statState.eStop THEN
+	    #statState.stateWord := #E_STOP_STATE;
+	  ELSIF #statState.stop THEN
+	    #statState.stateWord := #STOP_STATE;
+	  ELSIF #statState.fault THEN
+	    #statState.stateWord := #FAULT_STATE;
+	  ELSIF #statState.run THEN
+	    #statState.stateWord := #RUN_STATE;
+	  ELSE
+	    #statState.stateWord := #MAINTENANCE_STATE;
+	  END_IF;
+	    
+	    
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	
+	  #state := #statState;
+	  ENO := TRUE;
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

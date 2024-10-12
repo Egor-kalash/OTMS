@@ -1,0 +1,15 @@
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\bin\Debug\net8.0-windows\ButtonApp.exe
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\bin\Debug\net8.0-windows\ButtonApp.deps.json
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\bin\Debug\net8.0-windows\ButtonApp.runtimeconfig.json
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\bin\Debug\net8.0-windows\ButtonApp.dll
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\bin\Debug\net8.0-windows\ButtonApp.pdb
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\ButtonApp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\ButtonApp.AssemblyInfoInputs.cache
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\ButtonApp.AssemblyInfo.cs
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\ButtonApp.csproj.CoreCompileInputs.cache
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\ButtonApp.sourcelink.json
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\ButtonApp.dll
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\refint\ButtonApp.dll
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\ButtonApp.pdb
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\ButtonApp.genruntimeconfig.cache
+C:\Users\hkalashl\OneDrive - University of Waterloo\Apps\FileReader\OTMS\python_try\ButtonApp\obj\Debug\net8.0-windows\ref\ButtonApp.dll

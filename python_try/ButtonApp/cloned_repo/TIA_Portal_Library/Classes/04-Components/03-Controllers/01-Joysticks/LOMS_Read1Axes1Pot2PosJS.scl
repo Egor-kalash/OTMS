@@ -1,0 +1,322 @@
+﻿TYPE "typeJSConfig"
+VERSION : 0.1
+   STRUCT
+      reverseDir { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // reverse the output direction without changing the wiring of the physical joystick
+      maxPotLimit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Maximum analog value range
+      minPotLimit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Minimum analog value range
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeJS1AxesStatus"
+TITLE = typeJS1Pot3PosStatus
+VERSION : 0.1
+//Joystick Status Datatype:
+//Real Pot output,
+//USInt position status
+//3 Bool position status signals
+   STRUCT
+      "potOut%" { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // potentiometer output, 0-100%
+      dirWord { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;   // position word: 0 - neutral, 1 - out, 2 - in
+      posNeutral { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // position neutral bit, true if neutral
+      posOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // position out bit, true if out
+      posIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // position in bit, true if in
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION_BLOCK "LOMS_Read1Axes1Pot2PosJS"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      enable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // block enable input
+      analog { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // potentiometer input
+      outPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // position switch in out direction, Normally Open
+      inPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // position switch in in direction, Normally Open
+      config { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeJSConfig";   // configuration data
+   END_VAR
+
+   VAR_OUTPUT 
+      valid { ExternalWritable := 'False'} : Bool;   // TRUE: Valid set of output values available at the FB
+      busy { ExternalWritable := 'False'} : Bool;   // TRUE: FB is not finished and new output values can be expected
+      error { ExternalWritable := 'False'} : Bool;   // TRUE: An error occurred during the execution of the FB
+      status { ExternalWritable := 'False'} : Word := #STATUS_NO_CALL;   // 16#0000 - 16#7FFF: Status of the FB, 16#8000 - 16#FFFF: Error identification
+      out { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeJS1AxesStatus";   // status output data of the joystick
+   END_VAR
+
+   VAR 
+      statEnableOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Old value of 'enable' input for edge detection
+      statValid { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Static value for output 'valid'
+      statBusy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Static value for output 'busy'
+      statError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Static value for output 'error'
+      statErrorUserCleared { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Error occurred that can only be solved by user; rising edge at enable input necessary
+      statErrorAutoCleared { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Error occurred that can be acknowledged by FB
+      statStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word := #STATUS_NO_CALL;   // Static value for output 'status'
+      statFBState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt := #FB_STATE_NO_PROCESSING;   // State in the state machine of the FB
+      statDisablingCompleted { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // TRUE: Disabling has been completed
+      statAnalogIn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statAnalogOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statZeroPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statOutPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statInPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statZeroPosOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statOutPosOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statInPosOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statDirOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : USInt;
+   END_VAR
+
+   VAR_TEMP 
+      tempEnable : Bool;   // Temporary value for input 'enable'
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : DInt := 0;   // FB state: No processing
+      FB_STATE_ENABLING : DInt := 10;   // FB state: Enabling
+      FB_STATE_PROCESSING : DInt := 50;   // FB state: Processing
+      FB_STATE_DISABLING : DInt := 90;   // FB state: Disabling
+      STATUS_NO_CALL : Word := 16#7000;   // No job being currently processed
+      STATUS_FIRST_CALL : Word := 16#7001;   // First call after incoming new job (rising edge 'enable')
+      STATUS_SUBSEQUENT_CALL : Word := 16#7002;   // Subsequent call during active processing without further details
+      ERR_UNDEFINED_STATE : Word := 16#8600;   // Error: due to an undefined state in state machine
+      ERR_IN_BLOCK_OPERATION : Word := 16#8001;   // Error: Wrong operation of the function block
+      ERR_PARAMETRIZATION : Word := 16#8200;   // Error: during parameterization
+      ERR_WRONG_CONFIG : Word := 16#8201;   // Error: wrong configuration input parameters
+      ERR_PROCESSING_EXTERN : Word := 16#8400;   // Error: when processing from outside (e. g. wrong I/O signals, axis not referenced)
+      ERR_ANALOG_SIGNAL_OVERFLOW : Word := 16#8401;   // Error: analog signal value exceeds set limits
+      ERR_PROCESSING_INTERN : Word := 16#8600;   // Error: when processing internally (e. g. when calling a system function)
+      ERR_AREA_RESERVED : Word := 16#8800;   // Error: Reserved area
+      ERR_USER_DEFINED_CLASSES : Word := 16#9000;   // Error: User-defined error classes
+      ERR_JOYSTICK_POS_SW_ERROR : Word := 16#9001;   // Error: Joystick Position switch error
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // OTOMAKEIT SOLUTIONS / (c)Copyright 2023
+	  //-------------------------------------------------------------------------------
+	  // Title:            LOMS_Read1Axes1Pot2PosJS
+	  // Comment/Function: The block reads the input signals of the Joystick. 
+	  //                   - Single Axes
+	  //                   - Single Potentiometer
+	  //                   - 2 Position switches
+	  //                   
+	  // Library/Family:   LOMS (Library OtoMakeit Solutions)
+	  // Author:           Yuriy Mosiyenko, Otomakeit Solutions
+	  // Tested with:      CPU1214C DC/DC/Relay FW:V4.5
+	  // Engineering:      TIA Portal V17
+	  // Restrictions:     
+	  // Requirements:     PLC (S7-1200 / S7-1500)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge         | Changes applied
+	  // 01.00.00 | 2023.05.16 | Yuriy Mosiyenko          | copied from template
+	  // 01.00.02 | 2023.05.16 | Yuriy Mosiyenko          | started editing, used 
+	  //                                                  | LGF EnableTemplateSimple template,
+	  //                                                  | changed this fb to 2-pos only to simpify it
+	  // 01.00.03 | 2023.05.17 | Yuriy Mosiyenko          | correcting mistakes after testing                                                 
+	  //===============================================================================
+	END_REGION
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	#tempEnable := #enable; // Work with temporary value / create process image
+	
+	REGION ENABLING/DISABLING
+	  IF (#tempEnable = TRUE) AND (#statStatus = #STATUS_NO_CALL) THEN // Enable FB
+	    // First call; initialize FB
+	    #statValid := TRUE;
+	    #statBusy := TRUE;
+	    #statError := FALSE;
+	    #statStatus := #STATUS_FIRST_CALL;
+	    #statErrorUserCleared := FALSE;
+	    #statErrorAutoCleared := TRUE;
+	    #statDisablingCompleted := FALSE;
+	    // State machine - start functionality
+	    #statFBState := #FB_STATE_ENABLING;
+	    
+	    // TODO: Initialize functionality: reset of variables, diagnostics, etc.
+	    #statAnalogIn := #analog;
+	    #statOutPos := #outPos;
+	    #statInPos := #inPos;
+	 
+	  ELSIF (#tempEnable = FALSE) AND (#statEnableOld = TRUE) THEN // Disable FB 
+	    #statFBState := #FB_STATE_DISABLING;
+	    
+	  ELSIF (#statStatus = #STATUS_FIRST_CALL) THEN // Set status identifier of subsequent call
+	    #statStatus := #STATUS_SUBSEQUENT_CALL;
+	  END_IF;
+	  
+	  // Edge detection 'enable' input
+	  #statEnableOld := #tempEnable;
+	END_REGION ENABLING/DISABLING
+	
+	IF (#statStatus = #STATUS_NO_CALL) THEN // Nothing to do -> End here to reduce "system load"
+	  RETURN;
+	END_IF;
+	
+	REGION STATE MACHINE
+	  CASE #statFBState OF // State machine of FB
+	    #FB_STATE_NO_PROCESSING:
+	      REGION No Processing
+	        ;
+	      END_REGION No Processing
+	      
+	    #FB_STATE_ENABLING: // Enabling active
+	      REGION enabling
+	        #statFBState := #FB_STATE_PROCESSING;
+	      END_REGION enabling
+	      
+	    #FB_STATE_PROCESSING: // Processing active
+	      REGION Processing
+	        #statAnalogIn := #analog;
+	        #statOutPos := #outPos;
+	        #statInPos := #inPos;
+	        #statError := FALSE;
+	        #statValid := true;
+	        #statStatus := #STATUS_SUBSEQUENT_CALL;
+	          //if one of the direction switches enabled
+	        IF #statOutPos XOR #statInPos THEN
+	            //if analog value above or equal configured minimum and below or equal the maximum
+	            //(in case of 2-pos directional switch, the pot value considered to be same in both directions
+	            //so, neutral band is always below minimum pot limit, and is not being checked). 
+	            IF #statAnalogIn >= #config.minPotLimit AND #statAnalogIn <= #config.maxPotLimit THEN
+	              #statAnalogOut := (INT_TO_REAL(#statAnalogIn-#config.minPotLimit)/INT_TO_REAL(#config.maxPotLimit-#config.minPotLimit))*100.0;
+	
+	              //set output position based on reverse enabled or disabled configuration
+	              #statOutPosOut := #statOutPos XOR #config.reverseDir;
+	              #statInPosOut := #statInPos XOR #config.reverseDir;
+	              #statZeroPosOut := FALSE;
+	              
+	              //if the direction is OUT, set the direction word to 1, if it is IN, set it to 2.
+	              IF #statOutPosOut THEN
+	                #statDirOut := 1;
+	              ELSE
+	                #statDirOut := 2;
+	              END_IF;
+	            ELSIF #statAnalogIn > #config.maxPotLimit THEN
+	              //if the analog value higher than configured maximum, set overflow error
+	              #statError := TRUE;
+	              #statValid := FALSE;
+	                #statStatus := #ERR_ANALOG_SIGNAL_OVERFLOW;
+	              #statAnalogOut := 0.0;
+	              #statZeroPosOut := TRUE;
+	              #statOutPosOut := FALSE;
+	              #statInPosOut := false;
+	              #statDirOut := 0;
+	            ELSE
+	              //if the pot value below configured minimum, set output to zero %
+	              #statAnalogOut := 0.0;
+	              #statZeroPosOut := TRUE;
+	              #statOutPosOut := FALSE;
+	              #statInPosOut := false;
+	              #statDirOut := 0;
+	              #statError := FALSE;
+	              #statStatus := #STATUS_SUBSEQUENT_CALL;
+	            END_IF;
+	        ELSE
+	            //set error if both position switches are set
+	            IF #statOutPos AND #statInPos THEN
+	              #statError := TRUE;
+	              #statValid := FALSE;
+	              #statStatus := #ERR_JOYSTICK_POS_SW_ERROR;
+	            ELSE
+	                #statError := FALSE;
+	                #statStatus := #STATUS_SUBSEQUENT_CALL;
+	            END_IF;
+	            //if direction switches both are false or both are true, reset the readings to neutral
+	            #statAnalogOut := 0.0;
+	            #statZeroPosOut := TRUE;
+	            #statOutPosOut := FALSE;
+	            #statInPosOut := false;
+	            #statDirOut := 0;
+	        END_IF;
+	      END_REGION Processing
+	      
+	    #FB_STATE_DISABLING: // Disabling active
+	      REGION Disabling
+	        #statDisablingCompleted := TRUE;
+	      END_REGION Disabling
+	      
+	    ELSE // Undefined state in state machine reached
+	      REGION Undefined state
+	        #statStatus := #ERR_UNDEFINED_STATE;
+	        #statErrorUserCleared := TRUE;
+	      END_REGION Undefined state
+	  END_CASE;
+	END_REGION STATE MACHINE
+	
+	REGION OUTPUTS
+	  // Write outputs
+	  IF (#statDisablingCompleted = TRUE) THEN
+	    REGION Disabling
+	      // Reset outputs if disabling completed
+	      #statValid := FALSE;
+	      #statBusy := FALSE;
+	      #statError := FALSE;
+	      #statErrorUserCleared := FALSE;
+	      #statErrorAutoCleared := FALSE;
+	      #statStatus := #STATUS_NO_CALL;
+	      // TODO: Reset application specific outputs
+	      #statAnalogOut := 0.0;
+	      #statZeroPosOut := TRUE;
+	      #statOutPosOut := FALSE;
+	      #statInPosOut := false;
+	      #statDirOut := 0;
+	    END_REGION Disabling
+	    
+	  ELSIF (#statErrorUserCleared = TRUE) AND (#statError = FALSE) THEN
+	    REGION Error user cleared
+	      // Error can only be cleared by user; rising edge at enable input is needed to continue 
+	      #statValid := FALSE;
+	      #statBusy := FALSE;
+	      #statError := TRUE;
+	      // execution aborted --> set state no processing
+	      #statFBState := #FB_STATE_NO_PROCESSING;
+	    END_REGION Error user cleared
+	    
+	  ELSIF (#statErrorAutoCleared = TRUE) AND (#statError = FALSE) THEN
+	    REGION Error auto cleared
+	      // Error can be reset by FB automatically  
+	      #statValid := TRUE;
+	      #statBusy := TRUE;
+	      #statError := FALSE;
+	      // TODO: Handling of autocleared error
+	      // 
+	    END_REGION Error auto cleared
+	    
+	  ELSIF (#statErrorAutoCleared = FALSE) AND (#statErrorUserCleared = FALSE) AND (#statError = TRUE) THEN
+	    REGION After user/auto cleared
+	      // If autocleared error is acknowledged
+	      #statValid := TRUE;
+	      #statBusy := TRUE;
+	      #statError := FALSE;
+	      // TODO: remove this line if more detailed status information is used instead of "#STATUS_SUBSEQUENT_CALL"
+	      #statStatus := #STATUS_SUBSEQUENT_CALL;
+	    END_REGION After user/auto cleared
+	  
+	  END_IF;
+	  
+	  REGION Write static values to outputs
+	    // Write static values to outputs
+	    #valid := #statValid;
+	    #busy := #statBusy;
+	    #error := #statError;
+	    #status := #statStatus;
+	    // if ENO mechanism is not used / not wanted replace the following line by --> ENO := TRUE;
+	    ENO := NOT #statError;
+	    // TODO: Write application specific static values to outputs
+	    #out.dirWord := #statDirOut;
+	    #out."potOut%" := LREAL_TO_REAL (#statAnalogOut);
+	    #out.posIn := #statInPosOut;
+	    #out.posOut := #statOutPosOut;
+	    #out.posNeutral := #statZeroPosOut;
+	  END_REGION Write static values to outputs
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+
