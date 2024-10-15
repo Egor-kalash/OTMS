@@ -1,0 +1,1 @@
+([('window', '/Users/georgei/OTMS/App_in_python/dist/window', 'EXECUTABLE')],)
